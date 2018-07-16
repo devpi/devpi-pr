@@ -1,4 +1,4 @@
-def test_manual_index_creation(capfd, devpi):
+def test_manual_index_creation(capfd, devpi, getjson):
     devpi(
         "index", "-c",
         "+pr-manual",
@@ -6,6 +6,20 @@ def test_manual_index_creation(capfd, devpi):
         "bases=%s/dev" % devpi.user,
         code=200)
     (out, err) = capfd.readouterr()
+    data = getjson("+pr-manual")["result"]
+    assert data["type"] == "merge"
+    assert data["state"] == "new"
+    assert data["messages"] == []
+    devpi(
+        "index",
+        "+pr-manual",
+        "state=pending",
+        "messages+=Please accept these updates packages",
+        code=200)
+    (out, err) = capfd.readouterr()
+    data = getjson("+pr-manual")["result"]
+    assert data["state"] == "pending"
+    assert data["messages"] == ["Please accept these updates packages"]
 
 
 def test_manual_index_creation_invalid_prefix(capfd, devpi):

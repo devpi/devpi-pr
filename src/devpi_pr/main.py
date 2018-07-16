@@ -17,3 +17,6 @@ def devpiserver_get_stage_class():
 def devpiserver_indexconfig_defaults(index_type):
     if index_type != "merge":
         return {}
+    return {
+        'state': 'new',
+        'messages': []}

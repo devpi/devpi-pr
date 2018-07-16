@@ -76,11 +76,11 @@ First a new *merge index* needs to be created. The index name must start with ``
 
 Once the index is created, packages can be uploaded to it with ``devpi upload`` or pushed from another index with ``devpi push``.
 
-At last the ``state`` of the index needs to be changed to ``pending``:
+At last the ``state`` of the index needs to be changed to ``pending`` and a state change message be added:
 
 .. code-block::
 
-    $ devpi index +pr-20180322 state=pending
+    $ devpi index +pr-20180322 state=pending messages+="Please accept these updates packages"
 
 
 Managing push requests

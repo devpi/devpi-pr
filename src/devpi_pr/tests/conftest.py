@@ -146,3 +146,19 @@ def devpi(cmd_devpi, devpi_username, url_of_liveserver):
     cmd_devpi("use", "dev")
     cmd_devpi.user = user
     return cmd_devpi
+
+
+@pytest.fixture
+def getjson(devpi_username, url_of_liveserver):
+    def getjson(userindex):
+        if '/' not in userindex:
+            userindex = "%s/%s" % (devpi_username, userindex)
+        jsontype = "application/json"
+        headers = {"Accept": jsontype, "content-type": jsontype}
+        r = requests.get(
+            url_of_liveserver.joinpath(userindex).url,
+            headers=headers)
+        if r.status_code != 200:
+            raise ValueError(r.reason)
+        return r.json()
+    return getjson
