@@ -1,10 +1,11 @@
-====================================================
-devpi-pr: push request index plugin for devpi-server
-====================================================
+=============================================
+devpi-pr: push request index plugin for devpi
+=============================================
 
-This plugin adds a *push request* workflow to `devpi-server`_.
+This plugin adds a *push request* workflow to `devpi-server`_ and supporting commands to `devpi-client`.
 
 .. _devpi-server: http://pypi.python.org/pypi/devpi-server
+.. _devpi-client: http://pypi.python.org/pypi/devpi-client
 
 
 Installation

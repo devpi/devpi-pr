@@ -1,25 +1,4 @@
-from devpi_server.model import InvalidIndex, PrivateStage
-
-
-class MergeStage(PrivateStage):
-    @classmethod
-    def verify_name(cls, indexname):
-        if not indexname.startswith('+pr-'):
-            raise InvalidIndex(
-                "indexname '%s' must start with '+pr-'." % indexname)
-        PrivateStage.verify_name(indexname[4:])
-
-
-def devpiserver_get_stage_class():
-    return ("merge", MergeStage)
-
-
-def devpiserver_indexconfig_defaults(index_type):
-    if index_type != "merge":
-        return {}
-    return {
-        'state': 'new',
-        'messages': []}
+from devpi.main import hookimpl
 
 
 def pr_arguments(parser):
@@ -65,12 +44,12 @@ def submit_pr(hub, args):
     indexname = "+pr-" + name
     url = hub.current.get_index_url(indexname, slash=False)
     hub.http_api("patch", url, [
-        dict(op="test", path="/state", value="new"),
-        dict(op="replace", path="/state", value="pending"),
-        dict(op="add", path="/messages/-", value=message)])
+        "state=pending",
+        "messages+=%s" % message])
 
 
+@hookimpl
 def devpiclient_subcommands():
     return [
-        (pr_arguments, "pr", "devpi_pr.main:pr"),
-        (submit_pr_arguments, "submit-pr", "devpi_pr.main:submit_pr")]
+        (pr_arguments, "pr", "devpi_pr.client:pr"),
+        (submit_pr_arguments, "submit-pr", "devpi_pr.client:submit_pr")]
