@@ -26,6 +26,8 @@ setup(
     version=get_version(os.path.join("src", "devpi_pr")),
     license="MIT",
     entry_points={
+        'devpi_client': [
+            "devpi-pr = devpi_pr.main"],
         'devpi_server': [
             "devpi-pr = devpi_pr.main"]},
     install_requires=[],

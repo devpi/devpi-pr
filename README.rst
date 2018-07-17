@@ -47,19 +47,29 @@ Creating a push request
 With devpi-client pr command
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The ``devpi-pr`` plugin adds a new ``pr`` command when installed alongside ``devpi-client``.
+The ``devpi-pr`` plugin adds new commands when installed alongside ``devpi-client``.
 
 Lets say the currently used index has packages ``pkg-app 1.0`` and ``app-dependency 1.2``.
 To create a new *push request* with packages from the currently selected index to the target index ``prod/main``, the following command is used:
 
-.. code-block::
+.. code-block:: bash
 
-    $ devpi pr pkg-app==1.0 app-dependency==1.2 prod/main
+    $ devpi pr 20180322 pkg-app==1.0 app-dependency==1.2 prod/main
+
+This creates a new *merge index* named ``+pr-20180322`` and adds the two packages to it.
+
+It's possible to upload and push further packages at this point.
+
+Afterwards it can be submitted like this:
+
+.. code-block:: bash
+
+    $ devpi submit-pr 20180322
 
 When the EDITOR environment variable is set, it is used to open an editor to provide a message for the *push request*, otherwise a simple prompt is used.
-Optionally the message can be added directly to the *push request* with the ``-m`` option of the ``pr`` command.
+Optionally the message can be added directly to the *push request* with the ``-m`` option of the ``submit-pr`` command.
 
-A new index with a unique name prefixed by ``+pr-`` of type ``merge`` is created, the packages ``pkg-app 1.0`` and ``app-dependency 1.2`` are pushed to it and the state is set to ``pending``.
+The state of the *merge index* is now set to ``pending``.
 
 
 Manually in separate steps
@@ -70,7 +80,7 @@ This allows more fine grained control over the process and works without ``devpi
 
 First a new *merge index* needs to be created. The index name must start with ``+pr-``, be of type ``merge`` and the target index specified in ``bases``:
 
-.. code-block::
+.. code-block:: bash
 
     $ devpi index -c +pr-20180322 type=merge bases=prod/main
 
@@ -78,9 +88,9 @@ Once the index is created, packages can be uploaded to it with ``devpi upload`` 
 
 At last the ``state`` of the index needs to be changed to ``pending`` and a state change message be added:
 
-.. code-block::
+.. code-block:: bash
 
-    $ devpi index +pr-20180322 state=pending messages+="Please accept these updates packages"
+    $ devpi index +pr-20180322 state=pending messages+="Please accept these updated packages"
 
 
 Managing push requests
@@ -96,14 +106,14 @@ All commands which change the state of a *push request* ask for a message and ac
 
 To list all pending *push requests* for a target index, use the ``list-prs`` command with the name of the target index:
 
-.. code-block::
+.. code-block:: bash
 
     $ devpi list-prs prod/main
     user/+pr-20180322 10
 
 With info about release files:
 
-.. code-block::
+.. code-block:: bash
 
     $ devpi list-prs -v prod/main
     user/+pr-20180322 10
@@ -114,7 +124,7 @@ With info about release files:
 
 With tox (test) result infos:
 
-.. code-block::
+.. code-block:: bash
 
     $ devpi list-prs -vt prod/main
     user/+pr-20180322 10 (differing tox results)
@@ -127,7 +137,7 @@ The ``10`` after the name is the current serial number needed for other commands
 
 To accept or reject a *push request*, use ``accept-pr`` and ``reject-pr``:
 
-.. code-block::
+.. code-block:: bash
 
     $ devpi accept-pr user/+pr-20180322 10
     The push request user/+pr-20180322 was accepted and the following packages from it pushed into prod/main:
@@ -139,7 +149,7 @@ To accept or reject a *push request*, use ``accept-pr`` and ``reject-pr``:
 
 An example where the *push request* has changed:
 
-.. code-block::
+.. code-block:: bash
 
     $ devpi reject-pr user/+pr-20180322 10 -m "The test results for pkg-app are missing"
     The push request has changed since serial 10. Please inspect it again.
