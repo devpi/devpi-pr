@@ -1,3 +1,4 @@
+from devpi_server.config import hookimpl
 from devpi_server.model import InvalidIndex
 from devpi_server.model import InvalidIndexconfig
 from devpi_server.model import PrivateStage
@@ -23,10 +24,12 @@ class MergeStage(PrivateStage):
             raise InvalidIndexconfig(messages)
 
 
+@hookimpl
 def devpiserver_get_stage_class():
     return ("merge", MergeStage)
 
 
+@hookimpl
 def devpiserver_indexconfig_defaults(index_type):
     if index_type != "merge":
         return {}
