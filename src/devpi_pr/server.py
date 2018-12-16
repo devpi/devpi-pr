@@ -2,6 +2,15 @@ from devpi_server.config import hookimpl
 from devpi_server.model import InvalidIndex
 from devpi_server.model import InvalidIndexconfig
 from devpi_server.model import PrivateStage
+from devpi_server.views import apireturn
+
+
+states = {
+    'new': set(['pending']),
+    'pending': set(['approved', 'new', 'rejected']),
+    'approved': set([]),
+    'rejected': set(['pending']),
+}
 
 
 class MergeStage(PrivateStage):
@@ -32,8 +41,11 @@ class MergeStage(PrivateStage):
                 errors.append("Existing messages can't be modified")
             if list(oldconfig["bases"]) != list(newconfig["bases"]):
                 errors.append("The bases of a merge index can't be changed")
-            if oldconfig["state"] == "new" and newconfig["state"] != "pending":
-                errors.append("The merge index isn't in state 'pending'")
+            new_states = states[oldconfig["state"]]
+            if newconfig["state"] not in new_states:
+                errors.append(
+                    "State transition from '%s' to '%s' not allowed" % (
+                        oldconfig["state"], newconfig["state"]))
         if len(newconfig["bases"]) != 1:
             errors.append("A merge index must have exactly one base")
         if errors:
@@ -46,6 +58,19 @@ class MergeStage(PrivateStage):
                 raise InvalidIndexconfig([
                     "The target index '%s' doesn't allow "
                     "push requests" % target.name])
+
+    def auth_ixconfig(self, request, ixconfig):
+        if ixconfig["state"] == "approved":
+            target = self.xom.model.getstage(ixconfig["bases"][0])
+            if not request.has_permission("pypi_submit", context=target):
+                apireturn(401, message="user %r cannot upload to %r" % (
+                    request.authenticated_userid, target.name))
+        if ixconfig["state"] == "rejected":
+            target = self.xom.model.getstage(ixconfig["bases"][0])
+            if not request.has_permission("pypi_submit", context=target):
+                raise InvalidIndexconfig([
+                    "State transition to '%s' "
+                    "not authorized" % ixconfig["state"]])
 
 
 @hookimpl

@@ -71,32 +71,61 @@ def test_submit_merge_index_not_allowed(mapp, mergeindex, targetindex, testapp):
     mapp.login(mergeindex.stagename.split('/')[0], "123")
     r = testapp.patch_json(mergeindex.index, [
         'state=pending',
-        'messages+=Please accept'], expect_errors=True)
+        'messages+=Please approve'], expect_errors=True)
     assert r.json["message"] == "The target index '%s' doesn't allow push requests" % targetindex.stagename
 
 
 def test_submit_merge_index(mergeindex, targetindex, testapp):
     r = testapp.patch_json(mergeindex.index, [
         'state=pending',
-        'messages+=Please accept'])
+        'messages+=Please approve'])
     r = testapp.get_json(mergeindex.index)
     result = r.json['result']
     assert result['type'] == 'merge'
     assert result['acl_upload'] == ['mergeuser']
     assert result['bases'] == [targetindex.stagename]
-    assert result['messages'] == ['Please accept']
+    assert result['messages'] == ['Please approve']
     assert result['state'] == 'pending'
 
 
-def test_accept_new_not_possible(mergeindex, testapp):
+@pytest.mark.parametrize("targetstate", ["approved", "rejected"])
+def test_invalid_state_changes_from_new(mergeindex, targetstate, testapp):
     r = testapp.patch_json(mergeindex.index, [
-        'state=accepted',
-        'messages+=Accept'], expect_errors=True)
-    assert r.json["message"] == "The merge index isn't in state 'pending'"
+        'state=%s' % targetstate,
+        'messages+=Change'], expect_errors=True)
+    assert r.json["message"] == "State transition from 'new' to '%s' not allowed" % targetstate
 
 
-def test_reject_new_not_possible(mergeindex, testapp):
+def test_approve_pending_not_possible_for_mergeuser(mergeindex, targetindex, testapp):
+    r = testapp.patch_json(mergeindex.index, [
+        'state=pending',
+        'messages+=Please approve'])
+    r = testapp.patch_json(mergeindex.index, [
+        'state=approved',
+        'messages+=Approve'], expect_errors=True)
+    assert r.json["message"] == "user 'mergeuser' cannot upload to '%s'" % targetindex.stagename
+
+
+def test_reject_pending_not_possible_for_mergeuser(mergeindex, testapp):
+    r = testapp.patch_json(mergeindex.index, [
+        'state=pending',
+        'messages+=Please approve'])
     r = testapp.patch_json(mergeindex.index, [
         'state=rejected',
-        'messages+=Accept'], expect_errors=True)
-    assert r.json["message"] == "The merge index isn't in state 'pending'"
+        'messages+=Reject'], expect_errors=True)
+    assert r.json["message"] == "State transition to 'rejected' not authorized"
+
+
+def test_cancel_pending(mergeindex, targetindex, testapp):
+    r = testapp.patch_json(mergeindex.index, [
+        'state=pending',
+        'messages+=Please approve'])
+    r = testapp.patch_json(mergeindex.index, [
+        'state=new',
+        'messages+=Cancel'], expect_errors=True)
+    result = r.json['result']
+    assert result['type'] == 'merge'
+    assert result['acl_upload'] == ['mergeuser']
+    assert result['bases'] == [targetindex.stagename]
+    assert result['messages'] == ['Please approve', 'Cancel']
+    assert result['state'] == 'new'
