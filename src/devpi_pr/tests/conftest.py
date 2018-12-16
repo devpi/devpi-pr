@@ -1,6 +1,5 @@
 from __future__ import print_function
 from contextlib import closing
-from devpi.main import initmain
 from devpi_common.url import URL
 from time import sleep
 import py
@@ -82,6 +81,7 @@ def url_of_liveserver(request):
 @pytest.fixture
 def cmd_devpi(tmpdir, monkeypatch):
     """ execute devpi subcommand in-process (with fresh init) """
+    from devpi.main import initmain
 
     def ask_confirm(msg):
         print("%s: yes" % msg)

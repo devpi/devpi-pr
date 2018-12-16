@@ -32,11 +32,12 @@ setup(
             "devpi-pr = devpi_pr.server"]},
     install_requires=[],
     extras_require={
-        'dev': ['devpi-client', 'devpi-server'],
-        'client': ['devpi-client'],
-        'server': ['devpi-server']},
+        'client': [
+            'devpi-client>=4.2.1.dev0'],
+        'server': [
+            'devpi-server>=4.8.1.dev0']},
     include_package_data=True,
     zip_safe=False,
-    python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*",
+    python_requires=">=3.4",
     package_dir={"": "src"},
     packages=['devpi_pr'])

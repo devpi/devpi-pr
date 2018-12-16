@@ -1,3 +1,14 @@
+import pytest
+try:
+    from devpi_server import __version__  # noqa
+except ImportError:
+    pytestmark = pytest.mark.skip("No devpi-server installed")
+try:
+    from devpi import __version__  # noqa
+except ImportError:
+    pytestmark = pytest.mark.skip("No devpi-client installed")
+
+
 def test_manual_index_creation(capfd, devpi, getjson):
     devpi(
         "index", "-c",

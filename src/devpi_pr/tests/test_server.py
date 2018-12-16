@@ -1,16 +1,20 @@
-from test_devpi_server.conftest import gentmp  # noqa
-from test_devpi_server.conftest import httpget  # noqa
-from test_devpi_server.conftest import makemapp  # noqa
-from test_devpi_server.conftest import maketestapp  # noqa
-from test_devpi_server.conftest import makexom  # noqa
-from test_devpi_server.conftest import mapp  # noqa
-from test_devpi_server.conftest import pypiurls  # noqa
-from test_devpi_server.conftest import storage_info  # noqa
-from test_devpi_server.conftest import testapp  # noqa
 import pytest
+try:
+    from devpi_server import __version__  # noqa
+except ImportError:
+    pytestmark = pytest.mark.skip("No devpi-server installed")
+else:
+    from test_devpi_server.conftest import gentmp  # noqa
+    from test_devpi_server.conftest import httpget  # noqa
+    from test_devpi_server.conftest import makemapp  # noqa
+    from test_devpi_server.conftest import maketestapp  # noqa
+    from test_devpi_server.conftest import makexom  # noqa
+    from test_devpi_server.conftest import mapp  # noqa
+    from test_devpi_server.conftest import pypiurls  # noqa
+    from test_devpi_server.conftest import storage_info  # noqa
+    from test_devpi_server.conftest import testapp  # noqa
 
-
-(makexom, mapp, testapp)  # shut up pyflakes
+    (makexom, mapp, testapp)  # shut up pyflakes
 
 
 @pytest.fixture

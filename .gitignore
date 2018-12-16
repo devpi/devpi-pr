@@ -1,4 +1,6 @@
+/.coverage
 /.pytest_cache/
+/.tox/
 /bin/
 /include/
 /lib/
