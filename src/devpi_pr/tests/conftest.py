@@ -142,7 +142,7 @@ def devpi(cmd_devpi, devpi_username, url_of_liveserver):
     cmd_devpi("use", url_of_liveserver.url, code=200)
     cmd_devpi("user", "-c", user, "password=123", "email=123")
     cmd_devpi("login", user, "--password", "123")
-    cmd_devpi("index", "-c", "dev")
+    cmd_devpi("index", "-c", "dev", "push_requests_allowed=true")
     cmd_devpi("use", "dev")
     cmd_devpi.user = user
     return cmd_devpi
