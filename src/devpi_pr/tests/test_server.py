@@ -131,7 +131,40 @@ def test_cancel_pending(mergeindex, targetindex, testapp):
     assert result['state'] == 'new'
 
 
-def test_pr_list(mergeindex, targetindex, testapp):
+def test_pr_list(mapp, mergeindex, targetindex, testapp):
     r = testapp.get_json(targetindex.index + "/+pr-list")
     result = r.json['result']
-    assert result == {'new': {'mergeuser': ['index']}}
+    assert result == {'new': {'mergeuser': [['index', 5]]}}
+    r = testapp.patch_json(mergeindex.index, [
+        'state=pending',
+        'messages+=Please approve'])
+    r = testapp.get_json(targetindex.index + "/+pr-list")
+    result = r.json['result']
+    assert result == {'pending': {'mergeuser': [['index', 6]]}}
+
+
+def test_pr_list_serial(mapp, mergeindex, targetindex, testapp):
+    r = testapp.get_json(targetindex.index + "/+pr-list")
+    result = r.json['result']
+    assert result == {'new': {'mergeuser': [['index', 5]]}}
+    content1 = mapp.makepkg("hello-1.0.tar.gz", b"content1", "hello", "1.0")
+    mapp.upload_file_pypi(
+        "hello-1.0.tar.gz", content1, "hello", "1.0",
+        set_whitelist=False)
+    r = testapp.get_json(targetindex.index + "/+pr-list")
+    result = r.json['result']
+    # serial 6 is registration, serial 7 is the upload
+    assert result == {'new': {'mergeuser': [['index', 7]]}}
+    r = testapp.patch_json(mergeindex.index, [
+        'state=pending',
+        'messages+=Please approve'])
+    r = testapp.get_json(targetindex.index + "/+pr-list")
+    result = r.json['result']
+    assert result == {'pending': {'mergeuser': [['index', 8]]}}
+    content2 = mapp.makepkg("hello-1.0.zip", b"content2", "hello", "1.0")
+    mapp.upload_file_pypi(
+        "hello-1.0.zip", content2, "hello", "1.0",
+        set_whitelist=False)
+    r = testapp.get_json(targetindex.index + "/+pr-list")
+    result = r.json['result']
+    assert result == {'pending': {'mergeuser': [['index', 9]]}}

@@ -44,11 +44,12 @@ class MergeStage(PrivateStage):
                 errors.append("Existing messages can't be modified")
             if list(oldconfig["bases"]) != list(newconfig["bases"]):
                 errors.append("The bases of a merge index can't be changed")
-            new_states = states[oldconfig["state"]]
-            if newconfig["state"] not in new_states:
-                errors.append(
-                    "State transition from '%s' to '%s' not allowed" % (
-                        oldconfig["state"], newconfig["state"]))
+            if oldconfig["state"] != newconfig["state"]:
+                new_states = states[oldconfig["state"]]
+                if newconfig["state"] not in new_states:
+                    errors.append(
+                        "State transition from '%s' to '%s' not allowed" % (
+                            oldconfig["state"], newconfig["state"]))
         if len(newconfig["bases"]) != 1:
             errors.append("A merge index must have exactly one base")
         if errors:
