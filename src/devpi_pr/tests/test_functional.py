@@ -75,3 +75,26 @@ def test_index_creation(capfd, devpi, getjson):
     data = getjson("+pr-20180717")["result"]
     assert data["state"] == "pending"
     assert data["messages"] == ["Please accept these updated packages"]
+
+
+def test_pr_listing(capfd, devpi, getjson):
+    # a new one
+    devpi(
+        "pr",
+        "20181217",
+        "%s/dev" % devpi.user,
+        code=200)
+    # a submitted one
+    devpi(
+        "pr",
+        "20180717",
+        "%s/dev" % devpi.user,
+        code=200)
+    devpi(
+        "submit-pr",
+        "20180717",
+        "-m", "Please accept these updated packages",
+        code=200)
+    devpi(
+        "list-prs",
+        code=200)

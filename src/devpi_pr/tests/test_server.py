@@ -129,3 +129,9 @@ def test_cancel_pending(mergeindex, targetindex, testapp):
     assert result['bases'] == [targetindex.stagename]
     assert result['messages'] == ['Please approve', 'Cancel']
     assert result['state'] == 'new'
+
+
+def test_pr_list(mergeindex, targetindex, testapp):
+    r = testapp.get_json(targetindex.index + "/+pr-list")
+    result = r.json['result']
+    assert result == {'new': {'mergeuser': ['index']}}

@@ -91,3 +91,15 @@ def devpiserver_indexconfig_defaults(index_type):
     return {
         'state': 'new',
         'messages': []}
+
+
+def includeme(config):
+    config.add_route("pr-list", "/{user}/{index}/+pr-list")
+    config.scan('devpi_pr.views')
+
+
+@server_hookimpl
+def devpiserver_pyramid_configure(config, pyramid_config):
+    # by using include, the package name doesn't need to be set explicitly
+    # for registrations of static views etc
+    pyramid_config.include('devpi_pr.server')

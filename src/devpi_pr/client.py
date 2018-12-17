@@ -30,6 +30,22 @@ def pr(hub, args):
         type="merge", bases=target))
 
 
+def list_prs_arguments(parser):
+    """ list push requests
+    """
+    parser.add_argument(
+        "indexname", type=str, action="store", nargs="?",
+        help="index name, specified as NAME or USER/NAME.  If no index "
+             "is specified use the current index")
+
+
+def list_prs(hub, args):
+    indexname = args.indexname
+    url = hub.current.get_index_url(indexname).asdir().joinpath("+pr-list")
+    r = hub.http_api("get", url, type="pr-list")
+    print(r.result)
+
+
 def submit_pr_arguments(parser):
     """ submit push request
     """
@@ -55,4 +71,5 @@ def submit_pr(hub, args):
 def devpiclient_subcommands():
     return [
         (pr_arguments, "pr", "devpi_pr.client:pr"),
+        (list_prs_arguments, "list-prs", "devpi_pr.client:list_prs"),
         (submit_pr_arguments, "submit-pr", "devpi_pr.client:submit_pr")]
