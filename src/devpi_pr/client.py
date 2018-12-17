@@ -1,4 +1,7 @@
-from devpi.main import hookimpl
+from pluggy import HookimplMarker
+
+
+client_hookimpl = HookimplMarker("devpiclient")
 
 
 def pr_arguments(parser):
@@ -48,7 +51,7 @@ def submit_pr(hub, args):
         "messages+=%s" % message])
 
 
-@hookimpl
+@client_hookimpl
 def devpiclient_subcommands():
     return [
         (pr_arguments, "pr", "devpi_pr.client:pr"),

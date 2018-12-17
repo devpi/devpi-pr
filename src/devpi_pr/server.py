@@ -1,8 +1,11 @@
-from devpi_server.config import hookimpl
 from devpi_server.model import InvalidIndex
 from devpi_server.model import InvalidIndexconfig
 from devpi_server.model import PrivateStage
 from devpi_server.views import apireturn
+from pluggy import HookimplMarker
+
+
+server_hookimpl = HookimplMarker("devpiserver")
 
 
 states = {
@@ -73,12 +76,12 @@ class MergeStage(PrivateStage):
                     "not authorized" % ixconfig["state"]])
 
 
-@hookimpl
+@server_hookimpl
 def devpiserver_get_stage_class():
     return ("merge", MergeStage)
 
 
-@hookimpl
+@server_hookimpl
 def devpiserver_indexconfig_defaults(index_type):
     if index_type == "mirror":
         return {}
