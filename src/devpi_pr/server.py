@@ -1,4 +1,5 @@
 from devpi_server.model import BaseStageCustomizer
+from devpi_server.model import ensure_list
 from devpi_server.model import is_valid_name
 from devpi_server.views import apireturn
 from pluggy import HookimplMarker
@@ -28,33 +29,41 @@ class MergeStage(BaseStageCustomizer):
     def get_indexconfig_items(self, **kwargs):
         errors = []
         ixconfig = {}
-        if not kwargs.get("state"):
+        if not kwargs.get("states"):
             errors.append("A merge index requires a state")
         else:
-            ixconfig["state"] = kwargs.pop("state")
+            ixconfig["states"] = ensure_list(kwargs.pop("states"))
         if not kwargs.get("messages"):
             errors.append("A merge index requires messages")
         else:
-            ixconfig["messages"] = kwargs.pop("messages")
-        return ()
+            ixconfig["messages"] = ensure_list(kwargs.pop("messages"))
+        if errors:
+            raise self.InvalidIndexconfig(errors)
+        return ixconfig.items()
 
     def validate_ixconfig(self, oldconfig, newconfig):
         errors = []
-        if newconfig["state"] == "pending":
+        newstate = newconfig["states"][-1]
+        if newstate == "pending":
             target = self.stage.xom.model.getstage(newconfig["bases"][0])
             if not target.ixconfig.get("push_requests_allowed", False):
                 errors.append(
                     "The target index '%s' doesn't allow "
                     "push requests" % target.name)
+        new_states_count = len(newconfig["states"])
         new_message_count = len(newconfig["messages"])
+        if new_states_count != new_message_count:
+            errors.append(
+                "The number of states and messages must match for a merge index")
         if set(oldconfig.keys()) == set(['type']):
             # creating new stage
             assert newconfig["type"] == "merge"
-            if newconfig["state"] != "new":
+            if newstate != "new":
                 errors.append("A new merge index must have state 'new'")
         else:
             old_message_count = len(oldconfig["messages"])
-            if oldconfig["state"] != newconfig["state"]:
+            oldstate = oldconfig["states"][-1]
+            if oldstate != newstate:
                 if new_message_count != old_message_count + 1:
                     errors.append("A state change on a merge index requires a message")
             if old_message_count > new_message_count:
@@ -63,12 +72,12 @@ class MergeStage(BaseStageCustomizer):
                 errors.append("Existing messages can't be modified")
             if list(oldconfig["bases"]) != list(newconfig["bases"]):
                 errors.append("The bases of a merge index can't be changed")
-            if oldconfig["state"] != newconfig["state"]:
-                new_states = states[oldconfig["state"]]
-                if newconfig["state"] not in new_states:
+            if oldstate != newstate:
+                new_states = states[oldstate]
+                if newstate not in new_states:
                     errors.append(
                         "State transition from '%s' to '%s' not allowed" % (
-                            oldconfig["state"], newconfig["state"]))
+                            oldstate, newstate))
         if len(newconfig["bases"]) != 1:
             errors.append("A merge index must have exactly one base")
         if errors:
@@ -82,15 +91,16 @@ class MergeStage(BaseStageCustomizer):
         ixconfig = self.stage.ixconfig
         targetindex = ixconfig["bases"][0]
         target = context.getstage(*targetindex.split("/"))
-        if ixconfig["state"] == "approved":
+        state = ixconfig["states"][-1]
+        if state == "approved":
             if not request.has_permission("pypi_submit", context=target):
                 apireturn(401, message="user %r cannot upload to %r" % (
                     request.authenticated_userid, target.name))
-        elif ixconfig["state"] == "rejected":
+        elif state == "rejected":
             if not request.has_permission("pypi_submit", context=target):
                 raise self.InvalidIndexconfig([
                     "State transition to '%s' "
-                    "not authorized" % ixconfig["state"]])
+                    "not authorized" % state])
         else:
             if not request.has_permission("index_modify"):
                 apireturn(403, "not allowed to modify index")
@@ -109,8 +119,9 @@ def devpiserver_indexconfig_defaults(index_type):
         return {
             'push_requests_allowed': False}
     return {
-        'state': 'new',
+        'states': [],
         'messages': []}
+    return {}
 
 
 def includeme(config):

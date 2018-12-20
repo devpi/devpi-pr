@@ -14,23 +14,27 @@ def test_manual_index_creation(capfd, devpi, getjson):
         "index", "-c",
         "+pr-manual",
         "type=merge",
+        "states=new",
+        "messages=New push request",
         "bases=%s/dev" % devpi.user,
         code=200)
     (out, err) = capfd.readouterr()
     data = getjson("+pr-manual")["result"]
     assert data["type"] == "merge"
-    assert data["state"] == "new"
-    assert data["messages"] == []
+    assert data["states"] == ["new"]
+    assert data["messages"] == ["New push request"]
     devpi(
         "index",
         "+pr-manual",
-        "state=pending",
+        "states+=pending",
         "messages+=Please accept these updated packages",
         code=200)
     (out, err) = capfd.readouterr()
     data = getjson("+pr-manual")["result"]
-    assert data["state"] == "pending"
-    assert data["messages"] == ["Please accept these updated packages"]
+    assert data["states"] == ["new", "pending"]
+    assert data["messages"] == [
+        "New push request",
+        "Please accept these updated packages"]
 
 
 def test_manual_index_creation_invalid_prefix(capfd, devpi):
@@ -64,8 +68,8 @@ def test_index_creation(capfd, devpi, getjson):
     (out, err) = capfd.readouterr()
     data = getjson("+pr-20180717")["result"]
     assert data["type"] == "merge"
-    assert data["state"] == "new"
-    assert data["messages"] == []
+    assert data["states"] == ["new"]
+    assert data["messages"] == ["New push request"]
     devpi(
         "submit-pr",
         "20180717",
@@ -73,8 +77,10 @@ def test_index_creation(capfd, devpi, getjson):
         code=200)
     (out, err) = capfd.readouterr()
     data = getjson("+pr-20180717")["result"]
-    assert data["state"] == "pending"
-    assert data["messages"] == ["Please accept these updated packages"]
+    assert data["states"] == ["new", "pending"]
+    assert data["messages"] == [
+        "New push request",
+        "Please accept these updated packages"]
 
 
 def test_pr_listing(capfd, devpi, getjson):

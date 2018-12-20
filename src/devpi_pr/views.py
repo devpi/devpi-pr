@@ -21,6 +21,6 @@ def pr_list(context, request):
                 if project_serial is None:
                     continue
                 last_serial = max(last_serial, project_serial)
-            state_info = result.setdefault(ixconfig["state"], {})
+            state_info = result.setdefault(ixconfig["states"][-1], {})
             state_info.setdefault(user.name, []).append((name[4:], last_serial))
     apireturn(200, type="pr-list", result=result)

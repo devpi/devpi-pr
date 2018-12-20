@@ -27,7 +27,8 @@ def pr(hub, args):
     indexname = "+pr-" + name
     url = hub.current.get_index_url(indexname, slash=False)
     hub.http_api("put", url, dict(
-        type="merge", bases=target))
+        type="merge", bases=target,
+        states=["new"], messages=["New push request"]))
 
 
 def list_prs_arguments(parser):
@@ -63,7 +64,7 @@ def submit_pr(hub, args):
     indexname = "+pr-" + name
     url = hub.current.get_index_url(indexname, slash=False)
     hub.http_api("patch", url, [
-        "state=pending",
+        "states+=pending",
         "messages+=%s" % message])
 
 
