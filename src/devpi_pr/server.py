@@ -1,6 +1,5 @@
-from devpi_server.model import InvalidIndex
-from devpi_server.model import InvalidIndexconfig
-from devpi_server.model import PrivateStage
+from devpi_server.model import BaseStageCustomizer
+from devpi_server.model import is_valid_name
 from devpi_server.views import apireturn
 from pluggy import HookimplMarker
 
@@ -16,19 +15,39 @@ states = {
 }
 
 
-class MergeStage(PrivateStage):
-    @classmethod
-    def verify_name(cls, indexname):
+class MergeStage(BaseStageCustomizer):
+    def verify_name(self, indexname):
         if not indexname.startswith('+pr-'):
-            raise InvalidIndex(
+            raise self.InvalidIndex(
                 "indexname '%s' must start with '+pr-'." % indexname)
-        PrivateStage.verify_name(indexname[4:])
+        if not is_valid_name(indexname[4:]):
+            raise self.InvalidIndex(
+                "indexname '%s' contains characters that aren't allowed. "
+                "Any ascii symbol besides -.@_ after '+pr-' is blocked." % indexname[4:])
 
-    @classmethod
-    def validate_ixconfig(cls, oldconfig, newconfig):
+    def get_indexconfig_items(self, **kwargs):
         errors = []
+        ixconfig = {}
+        if not kwargs.get("state"):
+            errors.append("A merge index requires a state")
+        else:
+            ixconfig["state"] = kwargs.pop("state")
+        if not kwargs.get("messages"):
+            errors.append("A merge index requires messages")
+        else:
+            ixconfig["messages"] = kwargs.pop("messages")
+        return ()
+
+    def validate_ixconfig(self, oldconfig, newconfig):
+        errors = []
+        if newconfig["state"] == "pending":
+            target = self.stage.xom.model.getstage(newconfig["bases"][0])
+            if not target.ixconfig.get("push_requests_allowed", False):
+                errors.append(
+                    "The target index '%s' doesn't allow "
+                    "push requests" % target.name)
         new_message_count = len(newconfig["messages"])
-        if not oldconfig:
+        if set(oldconfig.keys()) == set(['type']):
             # creating new stage
             assert newconfig["type"] == "merge"
             if newconfig["state"] != "new":
@@ -53,33 +72,33 @@ class MergeStage(PrivateStage):
         if len(newconfig["bases"]) != 1:
             errors.append("A merge index must have exactly one base")
         if errors:
-            raise InvalidIndexconfig(errors)
+            raise self.InvalidIndexconfig(errors)
 
-    def modify_ixconfig(self, ixconfig):
-        if ixconfig["state"] == "pending":
-            target = self.xom.model.getstage(ixconfig["bases"][0])
-            if not target.ixconfig.get("push_requests_allowed", False):
-                raise InvalidIndexconfig([
-                    "The target index '%s' doesn't allow "
-                    "push requests" % target.name])
+    def ixconfig_pre_modify(self, request):
+        pass
 
-    def auth_ixconfig(self, request, ixconfig):
+    def ixconfig_post_modify(self, request, oldconfig):
+        context = request.context
+        ixconfig = self.stage.ixconfig
+        targetindex = ixconfig["bases"][0]
+        target = context.getstage(*targetindex.split("/"))
         if ixconfig["state"] == "approved":
-            target = self.xom.model.getstage(ixconfig["bases"][0])
             if not request.has_permission("pypi_submit", context=target):
                 apireturn(401, message="user %r cannot upload to %r" % (
                     request.authenticated_userid, target.name))
-        if ixconfig["state"] == "rejected":
-            target = self.xom.model.getstage(ixconfig["bases"][0])
+        elif ixconfig["state"] == "rejected":
             if not request.has_permission("pypi_submit", context=target):
-                raise InvalidIndexconfig([
+                raise self.InvalidIndexconfig([
                     "State transition to '%s' "
                     "not authorized" % ixconfig["state"]])
+        else:
+            if not request.has_permission("index_modify"):
+                apireturn(403, "not allowed to modify index")
 
 
 @server_hookimpl
-def devpiserver_get_stage_class():
-    return ("merge", MergeStage)
+def devpiserver_get_stage_customizer_classes():
+    return [("merge", MergeStage)]
 
 
 @server_hookimpl

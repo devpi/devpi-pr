@@ -106,6 +106,22 @@ def test_approve_pending_not_possible_for_mergeuser(mergeindex, targetindex, tes
     assert r.json["message"] == "user 'mergeuser' cannot upload to '%s'" % targetindex.stagename
 
 
+def test_approve_pending(mapp, mergeindex, targetindex, testapp):
+    r = testapp.patch_json(mergeindex.index, [
+        'state=pending',
+        'messages+=Please approve'])
+    mapp.login(targetindex.stagename.split('/')[0], "123")
+    r = testapp.patch_json(mergeindex.index, [
+        'state=approved',
+        'messages+=Approve'], expect_errors=True)
+    result = r.json['result']
+    assert result['type'] == 'merge'
+    assert result['acl_upload'] == ['mergeuser']
+    assert result['bases'] == [targetindex.stagename]
+    assert result['messages'] == ['Please approve', 'Approve']
+    assert result['state'] == 'approved'
+
+
 def test_reject_pending_not_possible_for_mergeuser(mergeindex, testapp):
     r = testapp.patch_json(mergeindex.index, [
         'state=pending',
