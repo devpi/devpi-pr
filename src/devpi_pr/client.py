@@ -1,4 +1,5 @@
 from pluggy import HookimplMarker
+import json
 
 
 client_hookimpl = HookimplMarker("devpiclient")
@@ -38,18 +39,24 @@ def approve_pr_arguments(parser):
         "name", type=str, action="store", nargs=1,
         help="push request name")
     parser.add_argument(
+        "serial", type=str, action="store", nargs=1,
+        help="push request serial")
+    parser.add_argument(
         "-m", "--message", action="store",
         help="Message to add on submit.")
 
 
 def approve_pr(hub, args):
     (name,) = args.name
+    (serial,) = args.serial
     message = args.message
     indexname = "+pr-" + name
     url = hub.current.get_index_url(indexname, slash=False)
-    hub.http_api("patch", url, [
-        "states+=approved",
-        "messages+=%s" % message])
+    hub.http_api(
+        "patch", url, [
+            "states+=approved",
+            "messages+=%s" % message],
+        headers={'X-Devpi-PR-Serial': serial})
 
 
 def list_prs_arguments(parser):
@@ -65,7 +72,7 @@ def list_prs(hub, args):
     indexname = args.indexname
     url = hub.current.get_index_url(indexname).asdir().joinpath("+pr-list")
     r = hub.http_api("get", url, type="pr-list")
-    print(r.result)
+    print(json.dumps(r.result))
 
 
 def submit_pr_arguments(parser):

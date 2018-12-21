@@ -1,3 +1,4 @@
+from .utils import get_last_serial_for_merge_index
 from devpi_server.views import apireturn
 from pyramid.view import view_config
 
@@ -15,12 +16,7 @@ def pr_list(context, request):
             if context.stage.name not in ixconfig['bases']:
                 continue
             stage = user.getstage(name)
-            last_serial = user.key.last_serial
-            for project in stage.list_projects_perstage():
-                project_serial = stage.key_projsimplelinks(project).last_serial
-                if project_serial is None:
-                    continue
-                last_serial = max(last_serial, project_serial)
+            last_serial = get_last_serial_for_merge_index(stage)
             state_info = result.setdefault(ixconfig["states"][-1], {})
             state_info.setdefault(user.name, []).append((name[4:], last_serial))
     apireturn(200, type="pr-list", result=result)

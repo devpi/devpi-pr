@@ -1,3 +1,4 @@
+import json
 import pytest
 try:
     from devpi_server import __version__  # noqa
@@ -93,7 +94,7 @@ def test_index_creation(capfd, devpi, getjson, makepkg):
         "Please accept these updated packages"]
 
 
-def test_approval(devpi, getjson, makepkg):
+def test_approval(capfd, devpi, getjson, makepkg):
     devpi(
         "pr",
         "20180717",
@@ -111,9 +112,17 @@ def test_approval(devpi, getjson, makepkg):
         code=200)
     data = getjson("dev")["result"]
     assert data['projects'] == []
+    (out, err) = capfd.readouterr()
+    devpi(
+        "list-prs",
+        code=200)
+    (out, err) = capfd.readouterr()
+    info = json.loads(out.splitlines()[-1])
+    serial = info['pending'][devpi.user][0][1]
     devpi(
         "approve-pr",
         "20180717",
+        "%s" % serial,
         "-m", "The push request was accepted",
         code=200)
     data = getjson("+pr-20180717")["result"]

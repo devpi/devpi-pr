@@ -124,9 +124,10 @@ def test_invalid_state_changes_from_new(new_mergeindex, targetstate, testapp):
 
 
 def test_approve_pending_not_possible_for_mergeuser(mapp, mergeindex, targetindex, testapp):
+    headers = {'X-Devpi-PR-Serial': '8'}
     r = testapp.patch_json(mergeindex.index, [
         'states+=approved',
-        'messages+=Approve'], expect_errors=True)
+        'messages+=Approve'], headers=headers, expect_errors=True)
     assert r.json["message"] == "user 'mergeuser' cannot upload to '%s'" % targetindex.stagename
 
 
@@ -139,9 +140,10 @@ def test_approve_pending(mapp, mergeindex, targetindex, testapp):
     assert r.json['result']['projects'] == []
     # we approve the merge index
     mapp.login(targetindex.stagename.split('/')[0], "123")
+    headers = {'X-Devpi-PR-Serial': '8'}
     r = testapp.patch_json(mergeindex.index, [
         'states+=approved',
-        'messages+=Approve'], expect_errors=True)
+        'messages+=Approve'], headers=headers, expect_errors=True)
     result = r.json['result']
     assert result['type'] == 'merge'
     assert result['acl_upload'] == ['mergeuser']

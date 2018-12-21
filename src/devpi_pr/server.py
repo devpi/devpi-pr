@@ -1,3 +1,4 @@
+from .utils import get_last_serial_for_merge_index
 from devpi_server.model import BaseStageCustomizer
 from devpi_server.model import ensure_list
 from devpi_server.model import is_valid_name
@@ -103,6 +104,17 @@ class MergeStage(BaseStageCustomizer):
         target = context.getstage(*targetindex.split("/"))
         state = ixconfig["states"][-1]
         if state == "approved":
+            pr_serial = request.headers.get('X-Devpi-PR-Serial')
+            try:
+                pr_serial = int(pr_serial)
+            except TypeError:
+                apireturn(
+                    400, message="missing X-Devpi-PR-Serial request header")
+            merge_serial = get_last_serial_for_merge_index(self.stage)
+            if pr_serial != merge_serial:
+                apireturn(
+                    400, message="got X-Devpi-PR-Serial %s, expected %s" % (
+                        pr_serial, merge_serial))
             if not request.has_permission("pypi_submit", context=target):
                 apireturn(401, message="user %r cannot upload to %r" % (
                     request.authenticated_userid, target.name))
