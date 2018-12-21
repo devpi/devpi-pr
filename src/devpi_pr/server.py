@@ -106,6 +106,29 @@ class MergeStage(BaseStageCustomizer):
             if not request.has_permission("pypi_submit", context=target):
                 apireturn(401, message="user %r cannot upload to %r" % (
                     request.authenticated_userid, target.name))
+            for project in self.stage.list_projects_perstage():
+                version = self.stage.get_latest_version_perstage('hello')
+                linkstore = self.stage.get_linkstore_perstage(project, version)
+                target.set_versiondata(linkstore.metadata)
+                for link in linkstore.get_links():
+                    if link.rel == 'doczip':
+                        new_link = target.store_doczip(
+                            project, version,
+                            link.entry.file_get_content())
+                    else:
+                        new_link = target.store_releasefile(
+                            project, version,
+                            link.basename, link.entry.file_get_content(),
+                            last_modified=link.entry.last_modified)
+                    new_link.add_logs(
+                        x for x in link.get_logs()
+                        if x.get('what') != 'overwrite')
+                    new_link.add_log(
+                        'push',
+                        request.authenticated_userid,
+                        src=self.stage.name,
+                        dst=target.name,
+                        message=ixconfig['messages'][-1])
         elif state == "rejected":
             if not request.has_permission("pypi_submit", context=target):
                 raise self.InvalidIndexconfig([

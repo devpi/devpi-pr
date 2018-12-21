@@ -131,6 +131,13 @@ def test_approve_pending_not_possible_for_mergeuser(mapp, mergeindex, targetinde
 
 
 def test_approve_pending(mapp, mergeindex, targetindex, testapp):
+    # the mergeindex has one project
+    r = testapp.get_json(mergeindex.index)
+    assert r.json['result']['projects'] == ['hello']
+    # the targetindex has no project yet
+    r = testapp.get_json(targetindex.index)
+    assert r.json['result']['projects'] == []
+    # we approve the merge index
     mapp.login(targetindex.stagename.split('/')[0], "123")
     r = testapp.patch_json(mergeindex.index, [
         'states+=approved',
@@ -141,6 +148,35 @@ def test_approve_pending(mapp, mergeindex, targetindex, testapp):
     assert result['bases'] == [targetindex.stagename]
     assert result['messages'] == ['New push request', 'Please approve', 'Approve']
     assert result['states'] == ['new', 'pending', 'approved']
+    # now the targetindex should have the project
+    r = testapp.get_json(targetindex.index)
+    assert r.json['result']['projects'] == ['hello']
+    r = testapp.get_json(targetindex.index + '/hello')
+    result = r.json['result']
+    assert list(result.keys()) == ['1.0']
+    assert result['1.0']['name'] == 'hello'
+    assert result['1.0']['version'] == '1.0'
+    releases = mapp.getreleaseslist('hello', indexname=targetindex.stagename)
+    assert releases == [
+        'http://localhost/targetuser/targetindex/+f/d0b/425e00e15a0d3/hello-1.0.tar.gz']
+    r = testapp.get_json(targetindex.index + '/hello/1.0')
+    result = r.json['result']
+    assert len(result['+links']) == 1
+    assert len(result['+links'][0]['log']) == 2
+    upload = result['+links'][0]['log'][0]
+    del upload['when']
+    push = result['+links'][0]['log'][1]
+    del push['when']
+    assert upload == {
+        'dst': 'mergeuser/+pr-index',
+        'what': 'upload',
+        'who': 'mergeuser'}
+    assert push == {
+        'dst': 'targetuser/targetindex',
+        'message': 'Approve',
+        'src': 'mergeuser/+pr-index',
+        'what': 'push',
+        'who': 'targetuser'}
 
 
 def test_reject_pending_not_possible_for_mergeuser(mapp, mergeindex, testapp):
