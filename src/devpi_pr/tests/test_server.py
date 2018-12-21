@@ -156,16 +156,12 @@ def test_approve_pending(mapp, mergeindex, targetindex, testapp):
     assert list(result.keys()) == ['1.0']
     assert result['1.0']['name'] == 'hello'
     assert result['1.0']['version'] == '1.0'
-    releases = mapp.getreleaseslist('hello', indexname=targetindex.stagename)
-    assert releases == [
-        'http://localhost/targetuser/targetindex/+f/d0b/425e00e15a0d3/hello-1.0.tar.gz']
-    r = testapp.get_json(targetindex.index + '/hello/1.0')
-    result = r.json['result']
-    assert len(result['+links']) == 1
-    assert len(result['+links'][0]['log']) == 2
-    upload = result['+links'][0]['log'][0]
+    links = result['1.0']['+links']
+    assert len(links) == 1
+    assert len(links[0]['log']) == 2
+    upload = links[0]['log'][0]
     del upload['when']
-    push = result['+links'][0]['log'][1]
+    push = links[0]['log'][1]
     del push['when']
     assert upload == {
         'dst': 'mergeuser/+pr-index',
@@ -177,6 +173,9 @@ def test_approve_pending(mapp, mergeindex, targetindex, testapp):
         'src': 'mergeuser/+pr-index',
         'what': 'push',
         'who': 'targetuser'}
+    releases = mapp.getreleaseslist('hello', indexname=targetindex.stagename)
+    assert releases == [
+        'http://localhost/targetuser/targetindex/+f/d0b/425e00e15a0d3/hello-1.0.tar.gz']
 
 
 def test_reject_pending_not_possible_for_mergeuser(mapp, mergeindex, testapp):

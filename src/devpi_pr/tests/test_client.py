@@ -10,6 +10,7 @@ def test_commands(capsys):
         devpi.main.main(['devpi', '--help'])
     (out, err) = capsys.readouterr()
     assert e.value.code == 0
+    assert 'approve push request' in out
     assert 'create push request' in out
     assert 'list push requests' in out
     assert 'submit push request' in out

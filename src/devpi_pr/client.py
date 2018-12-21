@@ -31,6 +31,27 @@ def pr(hub, args):
         states=["new"], messages=["New push request"]))
 
 
+def approve_pr_arguments(parser):
+    """ approve push request
+    """
+    parser.add_argument(
+        "name", type=str, action="store", nargs=1,
+        help="push request name")
+    parser.add_argument(
+        "-m", "--message", action="store",
+        help="Message to add on submit.")
+
+
+def approve_pr(hub, args):
+    (name,) = args.name
+    message = args.message
+    indexname = "+pr-" + name
+    url = hub.current.get_index_url(indexname, slash=False)
+    hub.http_api("patch", url, [
+        "states+=approved",
+        "messages+=%s" % message])
+
+
 def list_prs_arguments(parser):
     """ list push requests
     """
@@ -72,5 +93,6 @@ def submit_pr(hub, args):
 def devpiclient_subcommands():
     return [
         (pr_arguments, "pr", "devpi_pr.client:pr"),
+        (approve_pr_arguments, "approve-pr", "devpi_pr.client:approve_pr"),
         (list_prs_arguments, "list-prs", "devpi_pr.client:list_prs"),
         (submit_pr_arguments, "submit-pr", "devpi_pr.client:submit_pr")]
