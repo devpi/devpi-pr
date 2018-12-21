@@ -170,7 +170,7 @@ def getjson(devpi_username, url_of_liveserver):
 def makepkg(tmpdir):
     def makepkg(basename, content, name, version):
         fn = tmpdir.join(basename)
-        with open(fn, "wb") as f:
+        with open(fn.strpath, "wb") as f:
             pkg_info = '\n'.join([
                 "Metadata-Version: 1.1",
                 "Name: %s" % name,
