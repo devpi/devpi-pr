@@ -9,7 +9,7 @@ except ImportError:
     pytestmark = pytest.mark.skip("No devpi-client installed")
 
 
-def test_manual_index_creation(capfd, devpi, getjson):
+def test_manual_index_creation(capfd, devpi, getjson, makepkg):
     devpi(
         "index", "-c",
         "+pr-manual",
@@ -23,6 +23,11 @@ def test_manual_index_creation(capfd, devpi, getjson):
     assert data["type"] == "merge"
     assert data["states"] == ["new"]
     assert data["messages"] == ["New push request"]
+    pkg = makepkg("hello-1.0.tar.gz", b"content1", "hello", "1.0")
+    devpi(
+        "upload",
+        "--index", "+pr-manual",
+        pkg.strpath)
     devpi(
         "index",
         "+pr-manual",
@@ -59,7 +64,7 @@ def test_manual_index_creation_invalid_name(capfd, devpi):
     assert "indexname 'invalid[name]' contains characters" in out
 
 
-def test_index_creation(capfd, devpi, getjson):
+def test_index_creation(capfd, devpi, getjson, makepkg):
     devpi(
         "pr",
         "20180717",
@@ -70,6 +75,11 @@ def test_index_creation(capfd, devpi, getjson):
     assert data["type"] == "merge"
     assert data["states"] == ["new"]
     assert data["messages"] == ["New push request"]
+    pkg = makepkg("hello-1.0.tar.gz", b"content1", "hello", "1.0")
+    devpi(
+        "upload",
+        "--index", "+pr-20180717",
+        pkg.strpath)
     devpi(
         "submit-pr",
         "20180717",
@@ -83,7 +93,7 @@ def test_index_creation(capfd, devpi, getjson):
         "Please accept these updated packages"]
 
 
-def test_pr_listing(capfd, devpi, getjson):
+def test_pr_listing(capfd, devpi, getjson, makepkg):
     # a new one
     devpi(
         "pr",
@@ -96,6 +106,11 @@ def test_pr_listing(capfd, devpi, getjson):
         "20180717",
         "%s/dev" % devpi.user,
         code=200)
+    pkg = makepkg("hello-1.0.tar.gz", b"content1", "hello", "1.0")
+    devpi(
+        "upload",
+        "--index", "+pr-20180717",
+        pkg.strpath)
     devpi(
         "submit-pr",
         "20180717",

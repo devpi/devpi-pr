@@ -1,6 +1,7 @@
 from __future__ import print_function
 from contextlib import closing
 from devpi_common.url import URL
+from io import BytesIO
 from time import sleep
 import py
 import pytest
@@ -8,6 +9,7 @@ import requests
 import socket
 import subprocess
 import sys
+import tarfile
 
 
 def get_open_port(host):
@@ -162,3 +164,24 @@ def getjson(devpi_username, url_of_liveserver):
             raise ValueError(r.reason)
         return r.json()
     return getjson
+
+
+@pytest.fixture
+def makepkg(tmpdir):
+    def makepkg(basename, content, name, version):
+        fn = tmpdir.join(basename)
+        with open(fn, "wb") as f:
+            pkg_info = '\n'.join([
+                "Metadata-Version: 1.1",
+                "Name: %s" % name,
+                "Version: %s" % version]).encode('utf-8')
+            tf = tarfile.open(basename, mode='w:gz', fileobj=f)
+            tinfo = tarfile.TarInfo('PKG-INFO')
+            tinfo.size = len(pkg_info)
+            tf.addfile(tinfo, BytesIO(pkg_info))
+            tinfo = tarfile.TarInfo('content')
+            tinfo.size = len(content)
+            tf.addfile(tinfo, BytesIO(content))
+            tf.close()
+        return fn
+    return makepkg

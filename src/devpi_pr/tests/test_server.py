@@ -39,7 +39,7 @@ def targetindex(mapp, testapp):
 
 
 @pytest.fixture
-def mergeindex(mapp, targetindex):
+def new_mergeindex(mapp, targetindex):
     mapp.create_and_login_user("mergeuser")
     api = mapp.create_index(
         "+pr-index",
@@ -51,8 +51,20 @@ def mergeindex(mapp, targetindex):
     return api
 
 
-def test_new_merge_index(mergeindex, targetindex, testapp):
-    r = testapp.get_json(mergeindex.index)
+@pytest.fixture
+def mergeindex(mapp, new_mergeindex, targetindex, testapp):
+    content1 = mapp.makepkg("hello-1.0.tar.gz", b"content1", "hello", "1.0")
+    mapp.upload_file_pypi(
+        "hello-1.0.tar.gz", content1, "hello", "1.0",
+        set_whitelist=False)
+    testapp.patch_json(new_mergeindex.index, [
+        'states+=pending',
+        'messages+=Please approve'])
+    return new_mergeindex
+
+
+def test_new_merge_index(new_mergeindex, targetindex, testapp):
+    r = testapp.get_json(new_mergeindex.index)
     result = r.json['result']
     assert result['type'] == 'merge'
     assert result['acl_upload'] == ['mergeuser']
@@ -61,7 +73,7 @@ def test_new_merge_index(mergeindex, targetindex, testapp):
     assert result['states'] == ['new']
 
 
-def test_submit_merge_index_not_allowed(mapp, mergeindex, targetindex, testapp):
+def test_submit_merge_index_not_allowed(mapp, new_mergeindex, targetindex, testapp):
     # first turn off push_requests_allowed
     mapp.login(targetindex.stagename.split('/')[0], "123")
     r = testapp.get_json(targetindex.index)
@@ -70,18 +82,31 @@ def test_submit_merge_index_not_allowed(mapp, mergeindex, targetindex, testapp):
         push_requests_allowed=False))
     assert r.json["result"]["push_requests_allowed"] is False
     # now try to submit
-    mapp.login(mergeindex.stagename.split('/')[0], "123")
-    r = testapp.patch_json(mergeindex.index, [
+    mapp.login(new_mergeindex.stagename.split('/')[0], "123")
+    r = testapp.patch_json(new_mergeindex.index, [
         'states+=pending',
         'messages+=Please approve'], expect_errors=True)
-    assert r.json["message"] == "The target index '%s' doesn't allow push requests" % targetindex.stagename
+    assert r.json["message"] == (
+        "The target index '%s' doesn't allow push requests, "
+        "The merge index has no packages" % targetindex.stagename)
 
 
-def test_submit_merge_index(mergeindex, targetindex, testapp):
-    r = testapp.patch_json(mergeindex.index, [
+def test_submit_empty_merge_index(new_mergeindex, targetindex, testapp):
+    r = testapp.patch_json(new_mergeindex.index, [
+        'states+=pending',
+        'messages+=Please approve'], expect_errors=True)
+    assert r.json["message"] == "The merge index has no packages"
+
+
+def test_submit_merge_index(mapp, new_mergeindex, targetindex, testapp):
+    content1 = mapp.makepkg("hello-1.0.tar.gz", b"content1", "hello", "1.0")
+    mapp.upload_file_pypi(
+        "hello-1.0.tar.gz", content1, "hello", "1.0",
+        set_whitelist=False)
+    r = testapp.patch_json(new_mergeindex.index, [
         'states+=pending',
         'messages+=Please approve'])
-    r = testapp.get_json(mergeindex.index)
+    r = testapp.get_json(new_mergeindex.index)
     result = r.json['result']
     assert result['type'] == 'merge'
     assert result['acl_upload'] == ['mergeuser']
@@ -91,17 +116,14 @@ def test_submit_merge_index(mergeindex, targetindex, testapp):
 
 
 @pytest.mark.parametrize("targetstate", ["approved", "rejected"])
-def test_invalid_state_changes_from_new(mergeindex, targetstate, testapp):
-    r = testapp.patch_json(mergeindex.index, [
+def test_invalid_state_changes_from_new(new_mergeindex, targetstate, testapp):
+    r = testapp.patch_json(new_mergeindex.index, [
         'states+=%s' % targetstate,
         'messages+=Change'], expect_errors=True)
     assert r.json["message"] == "State transition from 'new' to '%s' not allowed" % targetstate
 
 
-def test_approve_pending_not_possible_for_mergeuser(mergeindex, targetindex, testapp):
-    r = testapp.patch_json(mergeindex.index, [
-        'states+=pending',
-        'messages+=Please approve'])
+def test_approve_pending_not_possible_for_mergeuser(mapp, mergeindex, targetindex, testapp):
     r = testapp.patch_json(mergeindex.index, [
         'states+=approved',
         'messages+=Approve'], expect_errors=True)
@@ -109,9 +131,6 @@ def test_approve_pending_not_possible_for_mergeuser(mergeindex, targetindex, tes
 
 
 def test_approve_pending(mapp, mergeindex, targetindex, testapp):
-    r = testapp.patch_json(mergeindex.index, [
-        'states+=pending',
-        'messages+=Please approve'])
     mapp.login(targetindex.stagename.split('/')[0], "123")
     r = testapp.patch_json(mergeindex.index, [
         'states+=approved',
@@ -124,20 +143,14 @@ def test_approve_pending(mapp, mergeindex, targetindex, testapp):
     assert result['states'] == ['new', 'pending', 'approved']
 
 
-def test_reject_pending_not_possible_for_mergeuser(mergeindex, testapp):
-    r = testapp.patch_json(mergeindex.index, [
-        'states+=pending',
-        'messages+=Please approve'])
+def test_reject_pending_not_possible_for_mergeuser(mapp, mergeindex, testapp):
     r = testapp.patch_json(mergeindex.index, [
         'states+=rejected',
         'messages+=Reject'], expect_errors=True)
     assert r.json["message"] == "State transition to 'rejected' not authorized"
 
 
-def test_cancel_pending(mergeindex, targetindex, testapp):
-    r = testapp.patch_json(mergeindex.index, [
-        'states+=pending',
-        'messages+=Please approve'])
+def test_cancel_pending(mapp, mergeindex, targetindex, testapp):
     r = testapp.patch_json(mergeindex.index, [
         'states+=new',
         'messages+=Cancel'], expect_errors=True)
@@ -149,19 +162,23 @@ def test_cancel_pending(mergeindex, targetindex, testapp):
     assert result['states'] == ['new', 'pending', 'new']
 
 
-def test_pr_list(mapp, mergeindex, targetindex, testapp):
+def test_pr_list(mapp, new_mergeindex, targetindex, testapp):
     r = testapp.get_json(targetindex.index + "/+pr-list")
     result = r.json['result']
     assert result == {'new': {'mergeuser': [['index', 5]]}}
-    r = testapp.patch_json(mergeindex.index, [
+    content1 = mapp.makepkg("hello-1.0.tar.gz", b"content1", "hello", "1.0")
+    mapp.upload_file_pypi(
+        "hello-1.0.tar.gz", content1, "hello", "1.0",
+        set_whitelist=False)
+    r = testapp.patch_json(new_mergeindex.index, [
         'states+=pending',
         'messages+=Please approve'])
     r = testapp.get_json(targetindex.index + "/+pr-list")
     result = r.json['result']
-    assert result == {'pending': {'mergeuser': [['index', 6]]}}
+    assert result == {'pending': {'mergeuser': [['index', 8]]}}
 
 
-def test_pr_list_serial(mapp, mergeindex, targetindex, testapp):
+def test_pr_list_serial(mapp, new_mergeindex, targetindex, testapp):
     r = testapp.get_json(targetindex.index + "/+pr-list")
     result = r.json['result']
     assert result == {'new': {'mergeuser': [['index', 5]]}}
@@ -173,7 +190,7 @@ def test_pr_list_serial(mapp, mergeindex, targetindex, testapp):
     result = r.json['result']
     # serial 6 is registration, serial 7 is the upload
     assert result == {'new': {'mergeuser': [['index', 7]]}}
-    r = testapp.patch_json(mergeindex.index, [
+    r = testapp.patch_json(new_mergeindex.index, [
         'states+=pending',
         'messages+=Please approve'])
     r = testapp.get_json(targetindex.index + "/+pr-list")

@@ -16,6 +16,13 @@ states = {
 }
 
 
+def is_stage_empty(stage):
+    for project in stage.list_projects_perstage():
+        if stage.get_releaselinks_perstage(project):
+            return False
+    return True
+
+
 class MergeStage(BaseStageCustomizer):
     def verify_name(self, indexname):
         if not indexname.startswith('+pr-'):
@@ -50,6 +57,9 @@ class MergeStage(BaseStageCustomizer):
                 errors.append(
                     "The target index '%s' doesn't allow "
                     "push requests" % target.name)
+            if is_stage_empty(self.stage):
+                errors.append(
+                    "The merge index has no packages")
         new_states_count = len(newconfig["states"])
         new_message_count = len(newconfig["messages"])
         if new_states_count != new_message_count:
