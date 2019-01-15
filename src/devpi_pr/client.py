@@ -5,6 +5,19 @@ import json
 client_hookimpl = HookimplMarker("devpiclient")
 
 
+def full_indexname(hub, prname):
+    if '/' in prname:
+        try:
+            user, prname = prname.split('/')
+        except ValueError:
+            hub.fatal("Invalid index name")
+    else:
+        user = hub.current.get_auth_user()
+    if not prname.startswith('+pr-'):
+        prname = "+pr-%s" % prname
+    return "%s/%s" % (user, prname)
+
+
 def new_pr_arguments(parser):
     """ create push request
     """
@@ -25,7 +38,7 @@ def new_pr_arguments(parser):
 def new_pr(hub, args):
     (name,) = args.name
     (target,) = args.target
-    indexname = "+pr-" + name
+    indexname = full_indexname(hub, name)
     url = hub.current.get_index_url(indexname, slash=False)
     hub.http_api("put", url, dict(
         type="merge", bases=target,
@@ -50,7 +63,7 @@ def approve_pr(hub, args):
     (name,) = args.name
     (serial,) = args.serial
     message = args.message
-    indexname = "+pr-" + name
+    indexname = full_indexname(hub, name)
     url = hub.current.get_index_url(indexname, slash=False)
     hub.http_api(
         "patch", url, [
@@ -87,10 +100,12 @@ def submit_pr_arguments(parser):
 
 
 def submit_pr(hub, args):
+    hub.requires_login()
+    current = hub.require_valid_current_with_index()
     (name,) = args.name
     message = args.message
-    indexname = "+pr-" + name
-    url = hub.current.get_index_url(indexname, slash=False)
+    indexname = full_indexname(hub, name)
+    url = current.get_index_url(indexname, slash=False)
     hub.http_api("patch", url, [
         "states+=pending",
         "messages+=%s" % message])
