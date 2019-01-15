@@ -2,6 +2,7 @@
 /.pytest_cache/
 /.tox/
 /bin/
+/dist/
 /include/
 /lib/
 /pip-selfcheck.json
