@@ -1,5 +1,4 @@
 from pluggy import HookimplMarker
-import json
 
 
 client_hookimpl = HookimplMarker("devpiclient")
@@ -81,11 +80,35 @@ def list_prs_arguments(parser):
              "is specified use the current index")
 
 
+def get_name_serials(users_prs):
+    result = []
+    for user, prs in users_prs.items():
+        for pr in prs:
+            name = "%s/%s" % (user, pr['name'])
+            result.append((name, pr['base'], pr['last_serial']))
+    return sorted(result)
+
+
+def create_pr_list_output(users_prs):
+    out = []
+    name_serials = get_name_serials(users_prs)
+    longest_name = max(len(x[0]) for x in name_serials)
+    longest_base = max(len(x[1]) for x in name_serials)
+    longest_serial = max(len("%d" % x[2]) for x in name_serials)
+    fmt = "{0:<%d} -> {1:<%d} {2:>%d}" % (longest_name, longest_base, longest_serial + 3)
+    for name, base, serial in get_name_serials(users_prs):
+        out.append(fmt.format(name, base, serial))
+    return out
+
+
 def list_prs(hub, args):
     indexname = args.indexname
     url = hub.current.get_index_url(indexname).asdir().joinpath("+pr-list")
     r = hub.http_api("get", url, type="pr-list")
-    print(json.dumps(r.result))
+    for state in sorted(r.result):
+        out = create_pr_list_output(r.result[state])
+        print("%s push requests" % state)
+        print("\n".join("    %s" % x for x in out))
 
 
 def submit_pr_arguments(parser):

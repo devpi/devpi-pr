@@ -13,10 +13,21 @@ def pr_list(context, request):
         for name, ixconfig in user.get()["indexes"].items():
             if ixconfig["type"] != "merge":
                 continue
-            if context.stage.name not in ixconfig['bases']:
+            state = ixconfig["states"][-1]
+            add_index = False
+            print(user.name, name, request.authenticated_userid, state)
+            if user.name == request.authenticated_userid and state == "new":
+                add_index = True
+            if context.stage.name in ixconfig['bases']:
+                add_index = True
+            if add_index is False:
                 continue
             stage = user.getstage(name)
             last_serial = get_last_serial_for_merge_index(stage)
+            (base,) = ixconfig['bases']
             state_info = result.setdefault(ixconfig["states"][-1], {})
-            state_info.setdefault(user.name, []).append((name[4:], last_serial))
+            state_info.setdefault(user.name, []).append(dict(
+                name=name[4:],
+                base=base,
+                last_serial=last_serial))
     apireturn(200, type="pr-list", result=result)
