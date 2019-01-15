@@ -45,8 +45,8 @@ Usage
 Creating a push request
 -----------------------
 
-With devpi-client pr command
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+With devpi-client new-pr command
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The ``devpi-pr`` plugin adds new commands when installed alongside ``devpi-client``.
 
@@ -55,7 +55,7 @@ To create a new *push request* with packages from the currently selected index t
 
 .. code-block:: bash
 
-    $ devpi pr 20180322 pkg-app==1.0 app-dependency==1.2 prod/main
+    $ devpi new-pr 20180322 pkg-app==1.0 app-dependency==1.2 prod/main
 
 This creates a new *merge index* named ``+pr-20180322`` and adds the two packages to it.
 
@@ -99,7 +99,7 @@ Managing push requests
 
 This requires the ``devpi-pr`` plugin on the client side.
 
-The ``devpi-pr`` plugin adds the new commands ``approve-pr``, ``delete-pr``, ``list-prs``, ``reject-pr`` and ``submit-pr`` when installed alongside ``devpi-client``.
+The ``devpi-pr`` plugin adds the new commands ``new-pr``, ``approve-pr``, ``delete-pr``, ``list-prs``, ``reject-pr`` and ``submit-pr`` when installed alongside ``devpi-client``.
 
 If the target index has the ``push_requests_allowed`` option set to ``True``, then all users in ``acl_upload`` can manage incoming *push requests*, otherwise an error is returned.
 

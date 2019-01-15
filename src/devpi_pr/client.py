@@ -5,7 +5,7 @@ import json
 client_hookimpl = HookimplMarker("devpiclient")
 
 
-def pr_arguments(parser):
+def new_pr_arguments(parser):
     """ create push request
     """
     parser.add_argument(
@@ -22,7 +22,7 @@ def pr_arguments(parser):
         help="target index of form 'USER/NAME'")
 
 
-def pr(hub, args):
+def new_pr(hub, args):
     (name,) = args.name
     (target,) = args.target
     indexname = "+pr-" + name
@@ -99,7 +99,7 @@ def submit_pr(hub, args):
 @client_hookimpl
 def devpiclient_subcommands():
     return [
-        (pr_arguments, "pr", "devpi_pr.client:pr"),
+        (new_pr_arguments, "new-pr", "devpi_pr.client:new_pr"),
         (approve_pr_arguments, "approve-pr", "devpi_pr.client:approve_pr"),
         (list_prs_arguments, "list-prs", "devpi_pr.client:list_prs"),
         (submit_pr_arguments, "submit-pr", "devpi_pr.client:submit_pr")]
