@@ -67,7 +67,7 @@ def test_manual_index_creation_invalid_name(capfd, devpi):
 
 def test_index_creation(capfd, devpi, getjson, makepkg):
     devpi(
-        "pr",
+        "new-pr",
         "20180717",
         "%s/dev" % devpi.user,
         code=200)
@@ -96,7 +96,7 @@ def test_index_creation(capfd, devpi, getjson, makepkg):
 
 def test_approval(capfd, devpi, getjson, makepkg):
     devpi(
-        "pr",
+        "new-pr",
         "20180717",
         "%s/dev" % devpi.user,
         code=200)
@@ -117,8 +117,9 @@ def test_approval(capfd, devpi, getjson, makepkg):
         "list-prs",
         code=200)
     (out, err) = capfd.readouterr()
-    info = json.loads(out.splitlines()[-1])
-    serial = info['pending'][devpi.user][0][1]
+    lines = out.splitlines()
+    assert 'pending push requests' in lines[-2]
+    serial = lines[-1].split()[-1]
     devpi(
         "approve-pr",
         "20180717",
@@ -159,13 +160,13 @@ def test_approval(capfd, devpi, getjson, makepkg):
 def test_pr_listing(capfd, devpi, getjson, makepkg):
     # a new one
     devpi(
-        "pr",
+        "new-pr",
         "20181217",
         "%s/dev" % devpi.user,
         code=200)
     # a submitted one
     devpi(
-        "pr",
+        "new-pr",
         "20180717",
         "%s/dev" % devpi.user,
         code=200)
