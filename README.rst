@@ -91,7 +91,7 @@ At last the ``state`` of the index needs to be changed to ``pending`` and a stat
 
 .. code-block:: bash
 
-    $ devpi index +pr-20180322 state=pending messages+="Please accept these updated packages"
+    $ devpi index +pr-20180322 state=pending messages+="Please approve these updated packages"
 
 
 Managing push requests
@@ -99,7 +99,7 @@ Managing push requests
 
 This requires the ``devpi-pr`` plugin on the client side.
 
-The ``devpi-pr`` plugin adds the new commands ``accept-pr``, ``delete-pr``, ``list-prs``, ``reject-pr`` and ``submit-pr`` when installed alongside ``devpi-client``.
+The ``devpi-pr`` plugin adds the new commands ``approve-pr``, ``delete-pr``, ``list-prs``, ``reject-pr`` and ``submit-pr`` when installed alongside ``devpi-client``.
 
 If the target index has the ``push_requests_allowed`` option set to ``True``, then all users in ``acl_upload`` can manage incoming *push requests*, otherwise an error is returned.
 
@@ -136,12 +136,12 @@ With tox (test) result infos:
 
 The ``10`` after the name is the current serial number needed for other commands to avoid surprises when something changed in the meantime.
 
-To accept or reject a *push request*, use ``accept-pr`` and ``reject-pr``:
+To approve or reject a *push request*, use ``approve-pr`` and ``reject-pr``:
 
 .. code-block:: bash
 
-    $ devpi accept-pr user/+pr-20180322 10
-    The push request user/+pr-20180322 was accepted and the following packages from it pushed into prod/main:
+    $ devpi approve-pr user/+pr-20180322 10
+    The push request user/+pr-20180322 was approved and the following packages from it pushed into prod/main:
     app-dependency 1.2
         app-dependency-1.2.tgz sha256=924ad82c...
     pkg-app 1.0
