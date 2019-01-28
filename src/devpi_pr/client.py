@@ -1,8 +1,40 @@
 from devpi_common.metadata import parse_requirement
 from pluggy import HookimplMarker
+from tempfile import NamedTemporaryFile
+from subprocess import call
+import os
+import textwrap
+import traceback
 
 
 client_hookimpl = HookimplMarker("devpiclient")
+
+
+def get_message(hub, msg):
+    if msg and msg.strip():
+        return msg
+    editor = os.environ.get("EDITOR")
+    if not editor:
+        hub.fatal("No EDITOR environment variable set.")
+    with NamedTemporaryFile(prefix="devpi-pr-", suffix=".txt") as tf:
+        tf.write(textwrap.dedent("""\n
+            # Please enter the message for your push request.
+            # Lines starting with '#' will be ignored.
+            # An empty message aborts the current command.""").encode('utf-8'))
+        tf.flush()
+        try:
+            result = call([editor, tf.name])
+        except Exception as e:
+            hub.fatal(''.join(traceback.format_exception(e.__class__, e, None)))
+        if result != 0:
+            hub.fatal("Error (%s) calling editor %s" % (result, editor))
+        tf.seek(0)
+        lines = tf.read().decode('utf-8').splitlines()
+        msg = '\n'.join(x for x in lines if not x.strip().startswith('#'))
+        msg = msg.strip()
+        if msg:
+            return msg
+    hub.fatal("A message is required.")
 
 
 def full_indexname(hub, prname):
@@ -78,7 +110,7 @@ def approve_pr_arguments(parser):
 def approve_pr(hub, args):
     (name,) = args.name
     (serial,) = args.serial
-    message = args.message
+    message = get_message(hub, args.message)
     indexname = full_indexname(hub, name)
     url = hub.current.get_index_url(indexname, slash=False)
     hub.http_api(
@@ -143,7 +175,7 @@ def submit_pr(hub, args):
     hub.requires_login()
     current = hub.require_valid_current_with_index()
     (name,) = args.name
-    message = args.message
+    message = get_message(hub, args.message)
     indexname = full_indexname(hub, name)
     url = current.get_index_url(indexname, slash=False)
     hub.http_api("patch", url, [
