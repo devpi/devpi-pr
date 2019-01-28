@@ -151,10 +151,28 @@ def submit_pr(hub, args):
         "messages+=%s" % message])
 
 
+def delete_pr_arguments(parser):
+    """ delete push request
+    """
+    parser.add_argument(
+        "name", type=str, action="store", nargs=1,
+        help="push request name")
+
+
+def delete_pr(hub, args):
+    hub.requires_login()
+    current = hub.require_valid_current_with_index()
+    (name,) = args.name
+    indexname = full_indexname(hub, name)
+    url = current.get_index_url(indexname, slash=False)
+    hub.http_api("delete", url)
+
+
 @client_hookimpl
 def devpiclient_subcommands():
     return [
         (new_pr_arguments, "new-pr", "devpi_pr.client:new_pr"),
         (approve_pr_arguments, "approve-pr", "devpi_pr.client:approve_pr"),
         (list_prs_arguments, "list-prs", "devpi_pr.client:list_prs"),
-        (submit_pr_arguments, "submit-pr", "devpi_pr.client:submit_pr")]
+        (submit_pr_arguments, "submit-pr", "devpi_pr.client:submit_pr"),
+        (delete_pr_arguments, "delete-pr", "devpi_pr.client:delete_pr")]

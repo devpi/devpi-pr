@@ -187,6 +187,34 @@ def test_add_on_create(capfd, devpi, getjson, makepkg):
     assert "hello-1.0.tar.gz" in link["href"]
 
 
+def test_delete(capfd, devpi):
+    devpi(
+        "new-pr",
+        "20190128",
+        "%s/dev" % devpi.user,
+        code=200)
+    # clear output
+    capfd.readouterr()
+    devpi(
+        "list-prs",
+        code=200)
+    (out, err) = capfd.readouterr()
+    lines = list(x.strip() for x in out.splitlines()[-2:])
+    assert lines[0] == "new push requests"
+    assert lines[1].startswith(
+        "{user}/20190128 -> {user}/dev".format(user=devpi.user))
+    devpi(
+        "delete-pr",
+        "20190128",
+        code=201)
+    capfd.readouterr()
+    devpi(
+        "list-prs",
+        code=200)
+    (out, err) = capfd.readouterr()
+    assert len(out.splitlines()) == 1
+
+
 def test_pr_listing(capfd, devpi, getjson, makepkg):
     # a new one
     devpi(
