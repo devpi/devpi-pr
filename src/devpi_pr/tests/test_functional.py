@@ -253,6 +253,48 @@ def test_reject(capfd, devpi, getjson, makepkg):
     assert data['projects'] == []
 
 
+def test_cancel(capfd, devpi, getjson, makepkg):
+    pkg = makepkg("hello-1.0.tar.gz", b"content1", "hello", "1.0")
+    devpi(
+        "upload",
+        "--index", "dev",
+        pkg.strpath)
+    devpi(
+        "new-pr",
+        "20190128",
+        "%s/dev" % devpi.target,
+        "hello==1.0",
+        code=200)
+    devpi(
+        "submit-pr",
+        "20190128",
+        "-m", "Please accept these updated packages",
+        code=200)
+    devpi(
+        "cancel-pr",
+        "20190128",
+        "-m", "Never mind",
+        code=200)
+    # clear output
+    capfd.readouterr()
+    devpi(
+        "list-prs",
+        code=200)
+    (out, err) = capfd.readouterr()
+    lines = list(x.strip() for x in out.splitlines()[-2:])
+    assert lines[0] == "new push requests"
+    assert lines[1].startswith(
+        "%s/20190128 -> %s/dev" % (devpi.user, devpi.target))
+    data = getjson("+pr-20190128")["result"]
+    assert data["states"] == ["new", "pending", "new"]
+    assert data["messages"] == [
+        "New push request",
+        "Please accept these updated packages",
+        "Never mind"]
+    data = getjson("%s/dev" % devpi.target)["result"]
+    assert data['projects'] == []
+
+
 def test_delete(capfd, devpi):
     devpi(
         "new-pr",

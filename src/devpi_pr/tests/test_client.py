@@ -11,6 +11,7 @@ def test_commands(capsys):
     (out, err) = capsys.readouterr()
     assert e.value.code == 0
     assert 'approve push request' in out
+    assert 'cancel push request' in out
     assert 'create push request' in out
     assert 'delete push request' in out
     assert 'list push requests' in out

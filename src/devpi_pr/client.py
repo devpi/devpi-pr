@@ -206,6 +206,29 @@ def submit_pr(hub, args):
         "messages+=%s" % message])
 
 
+def cancel_pr_arguments(parser):
+    """ cancel push request
+    """
+    parser.add_argument(
+        "name", type=str, action="store", nargs=1,
+        help="push request name")
+    parser.add_argument(
+        "-m", "--message", action="store",
+        help="Message to add on cancel.")
+
+
+def cancel_pr(hub, args):
+    hub.requires_login()
+    current = hub.require_valid_current_with_index()
+    (name,) = args.name
+    message = get_message(hub, args.message)
+    indexname = full_indexname(hub, name)
+    url = current.get_index_url(indexname, slash=False)
+    hub.http_api("patch", url, [
+        "states+=new",
+        "messages+=%s" % message])
+
+
 def delete_pr_arguments(parser):
     """ delete push request
     """
@@ -231,4 +254,5 @@ def devpiclient_subcommands():
         (list_prs_arguments, "list-prs", "devpi_pr.client:list_prs"),
         (reject_pr_arguments, "reject-pr", "devpi_pr.client:reject_pr"),
         (submit_pr_arguments, "submit-pr", "devpi_pr.client:submit_pr"),
+        (cancel_pr_arguments, "cancel-pr", "devpi_pr.client:cancel_pr"),
         (delete_pr_arguments, "delete-pr", "devpi_pr.client:delete_pr")]
