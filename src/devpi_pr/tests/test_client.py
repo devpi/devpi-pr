@@ -14,4 +14,5 @@ def test_commands(capsys):
     assert 'create push request' in out
     assert 'delete push request' in out
     assert 'list push requests' in out
+    assert 'reject push request' in out
     assert 'submit push request' in out

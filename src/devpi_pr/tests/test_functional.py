@@ -190,6 +190,69 @@ def test_add_on_create(capfd, devpi, getjson, makepkg):
     assert "hello-1.0.tar.gz" in link["href"]
 
 
+def test_reject(capfd, devpi, getjson, makepkg):
+    pkg = makepkg("hello-1.0.tar.gz", b"content1", "hello", "1.0")
+    devpi(
+        "upload",
+        "--index", "dev",
+        pkg.strpath)
+    devpi(
+        "new-pr",
+        "20190128",
+        "%s/dev" % devpi.target,
+        "hello==1.0",
+        code=200)
+    devpi(
+        "submit-pr",
+        "20190128",
+        "-m", "Please accept these updated packages",
+        code=200)
+    # login as target user
+    devpi("login", devpi.target, "--password", "123")
+    devpi("use", "dev")
+    devpi(
+        "reject-pr",
+        "%s/20190128" % devpi.user,
+        "-m", "The push request was rejected",
+        code=200)
+    # clear output
+    capfd.readouterr()
+    devpi(
+        "list-prs",
+        code=200)
+    (out, err) = capfd.readouterr()
+    lines = list(x.strip() for x in out.splitlines()[-2:])
+    assert lines[0] == "rejected push requests"
+    assert lines[1].startswith(
+        "%s/20190128 -> %s/dev" % (devpi.user, devpi.target))
+    data = getjson("+pr-20190128")["result"]
+    assert data["states"] == ["new", "pending", "rejected"]
+    assert data["messages"] == [
+        "New push request",
+        "Please accept these updated packages",
+        "The push request was rejected"]
+    data = getjson("%s/dev" % devpi.target)["result"]
+    assert data['projects'] == []
+    # login as push request user
+    devpi("login", devpi.user, "--password", "123")
+    devpi("use", "dev")
+    # submit again
+    devpi(
+        "submit-pr",
+        "20190128",
+        "-m", "Please accept these fixed packages",
+        code=200)
+    data = getjson("+pr-20190128")["result"]
+    assert data["states"] == ["new", "pending", "rejected", "pending"]
+    assert data["messages"] == [
+        "New push request",
+        "Please accept these updated packages",
+        "The push request was rejected",
+        "Please accept these fixed packages"]
+    data = getjson("%s/dev" % devpi.target)["result"]
+    assert data['projects'] == []
+
+
 def test_delete(capfd, devpi):
     devpi(
         "new-pr",

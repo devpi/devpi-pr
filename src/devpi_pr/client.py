@@ -160,6 +160,29 @@ def list_prs(hub, args):
         print("\n".join("    %s" % x for x in out))
 
 
+def reject_pr_arguments(parser):
+    """ reject push request
+    """
+    parser.add_argument(
+        "name", type=str, action="store", nargs=1,
+        help="push request name")
+    parser.add_argument(
+        "-m", "--message", action="store",
+        help="Message to add on reject.")
+
+
+def reject_pr(hub, args):
+    hub.requires_login()
+    current = hub.require_valid_current_with_index()
+    (name,) = args.name
+    message = get_message(hub, args.message)
+    indexname = full_indexname(hub, name)
+    url = current.get_index_url(indexname, slash=False)
+    hub.http_api("patch", url, [
+        "states+=rejected",
+        "messages+=%s" % message])
+
+
 def submit_pr_arguments(parser):
     """ submit push request
     """
@@ -206,5 +229,6 @@ def devpiclient_subcommands():
         (new_pr_arguments, "new-pr", "devpi_pr.client:new_pr"),
         (approve_pr_arguments, "approve-pr", "devpi_pr.client:approve_pr"),
         (list_prs_arguments, "list-prs", "devpi_pr.client:list_prs"),
+        (reject_pr_arguments, "reject-pr", "devpi_pr.client:reject_pr"),
         (submit_pr_arguments, "submit-pr", "devpi_pr.client:submit_pr"),
         (delete_pr_arguments, "delete-pr", "devpi_pr.client:delete_pr")]
