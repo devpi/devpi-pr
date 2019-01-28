@@ -139,14 +139,25 @@ def devpi_username():
 
 
 @pytest.fixture
-def devpi(cmd_devpi, devpi_username, url_of_liveserver):
-    user = devpi_username
+def target_username():
+    attrname = '_count'
+    count = getattr(target_username, attrname, 0)
+    setattr(target_username, attrname, count + 1)
+    return "target%d" % count
+
+
+@pytest.fixture
+def devpi(cmd_devpi, devpi_username, target_username, url_of_liveserver):
     cmd_devpi("use", url_of_liveserver.url, code=200)
-    cmd_devpi("user", "-c", user, "password=123", "email=123")
-    cmd_devpi("login", user, "--password", "123")
+    cmd_devpi("user", "-c", target_username, "password=123", "email=123")
+    cmd_devpi("login", target_username, "--password", "123")
+    cmd_devpi("index", "-c", "dev", "push_requests_allowed=true")
+    cmd_devpi("user", "-c", devpi_username, "password=123", "email=123")
+    cmd_devpi("login", devpi_username, "--password", "123")
     cmd_devpi("index", "-c", "dev", "push_requests_allowed=true")
     cmd_devpi("use", "dev")
-    cmd_devpi.user = user
+    cmd_devpi.user = devpi_username
+    cmd_devpi.target = target_username
     return cmd_devpi
 
 

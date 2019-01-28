@@ -17,7 +17,7 @@ def test_manual_index_creation(capfd, devpi, getjson, makepkg):
         "type=merge",
         "states=new",
         "messages=New push request",
-        "bases=%s/dev" % devpi.user,
+        "bases=%s/dev" % devpi.target,
         code=200)
     (out, err) = capfd.readouterr()
     data = getjson("+pr-manual")["result"]
@@ -48,7 +48,7 @@ def test_manual_index_creation_invalid_prefix(capfd, devpi):
         "index", "-c",
         "invalid_prefix",
         "type=merge",
-        "bases=%s/dev" % devpi.user,
+        "bases=%s/dev" % devpi.target,
         code=400)
     (out, err) = capfd.readouterr()
     assert "indexname 'invalid_prefix' must start with '+pr-'." in out
@@ -59,7 +59,7 @@ def test_manual_index_creation_invalid_name(capfd, devpi):
         "index", "-c",
         "+pr-invalid[name]",
         "type=merge",
-        "bases=%s/dev" % devpi.user,
+        "bases=%s/dev" % devpi.target,
         code=400)
     (out, err) = capfd.readouterr()
     assert "indexname 'invalid[name]' contains characters" in out
@@ -69,7 +69,7 @@ def test_index_creation(capfd, devpi, getjson, makepkg):
     devpi(
         "new-pr",
         "20180717",
-        "%s/dev" % devpi.user,
+        "%s/dev" % devpi.target,
         code=200)
     (out, err) = capfd.readouterr()
     data = getjson("+pr-20180717")["result"]
@@ -98,7 +98,7 @@ def test_approval(capfd, devpi, getjson, makepkg):
     devpi(
         "new-pr",
         "20180717",
-        "%s/dev" % devpi.user,
+        "%s/dev" % devpi.target,
         code=200)
     pkg = makepkg("hello-1.0.tar.gz", b"content1", "hello", "1.0")
     devpi(
@@ -112,6 +112,9 @@ def test_approval(capfd, devpi, getjson, makepkg):
         code=200)
     data = getjson("dev")["result"]
     assert data['projects'] == []
+    # login as target user
+    devpi("login", devpi.target, "--password", "123")
+    devpi("use", "dev")
     (out, err) = capfd.readouterr()
     devpi(
         "list-prs",
@@ -122,7 +125,7 @@ def test_approval(capfd, devpi, getjson, makepkg):
     serial = lines[-1].split()[-1]
     devpi(
         "approve-pr",
-        "20180717",
+        "%s/20180717" % devpi.user,
         "%s" % serial,
         "-m", "The push request was accepted",
         code=200)
@@ -132,9 +135,9 @@ def test_approval(capfd, devpi, getjson, makepkg):
         "New push request",
         "Please accept these updated packages",
         "The push request was accepted"]
-    data = getjson("%s/dev" % devpi.user)["result"]
+    data = getjson("%s/dev" % devpi.target)["result"]
     assert data['projects'] == ['hello']
-    data = getjson("%s/dev/hello" % devpi.user)["result"]
+    data = getjson("%s/dev/hello" % devpi.target)["result"]
     assert list(data.keys()) == ['1.0']
     assert data['1.0']['name'] == 'hello'
     assert data['1.0']['version'] == '1.0'
@@ -150,11 +153,11 @@ def test_approval(capfd, devpi, getjson, makepkg):
         'what': 'upload',
         'who': '%s' % devpi.user}
     assert push == {
-        'dst': '%s/dev' % devpi.user,
+        'dst': '%s/dev' % devpi.target,
         'message': 'The push request was accepted',
         'src': '%s/+pr-20180717' % devpi.user,
         'what': 'push',
-        'who': '%s' % devpi.user}
+        'who': '%s' % devpi.target}
 
 
 def test_add_on_create(capfd, devpi, getjson, makepkg):
@@ -166,7 +169,7 @@ def test_add_on_create(capfd, devpi, getjson, makepkg):
     devpi(
         "new-pr",
         "20190128",
-        "%s/dev" % devpi.user,
+        "%s/dev" % devpi.target,
         "hello==1.0",
         code=200)
     # clear output
@@ -178,7 +181,7 @@ def test_add_on_create(capfd, devpi, getjson, makepkg):
     lines = list(x.strip() for x in out.splitlines()[-2:])
     assert lines[0] == "new push requests"
     assert lines[1].startswith(
-        "{user}/20190128 -> {user}/dev".format(user=devpi.user))
+        "%s/20190128 -> %s/dev" % (devpi.user, devpi.target))
     data = getjson("/%s/+pr-20190128" % devpi.user)["result"]
     assert data["projects"] == ["hello"]
     data = getjson("/%s/+pr-20190128/hello" % devpi.user)["result"]
@@ -191,7 +194,7 @@ def test_delete(capfd, devpi):
     devpi(
         "new-pr",
         "20190128",
-        "%s/dev" % devpi.user,
+        "%s/dev" % devpi.target,
         code=200)
     # clear output
     capfd.readouterr()
@@ -202,7 +205,7 @@ def test_delete(capfd, devpi):
     lines = list(x.strip() for x in out.splitlines()[-2:])
     assert lines[0] == "new push requests"
     assert lines[1].startswith(
-        "{user}/20190128 -> {user}/dev".format(user=devpi.user))
+        "%s/20190128 -> %s/dev" % (devpi.user, devpi.target))
     devpi(
         "delete-pr",
         "20190128",
@@ -220,13 +223,13 @@ def test_pr_listing(capfd, devpi, getjson, makepkg):
     devpi(
         "new-pr",
         "20181217",
-        "%s/dev" % devpi.user,
+        "%s/dev" % devpi.target,
         code=200)
     # a submitted one
     devpi(
         "new-pr",
         "20180717",
-        "%s/dev" % devpi.user,
+        "%s/dev" % devpi.target,
         code=200)
     pkg = makepkg("hello-1.0.tar.gz", b"content1", "hello", "1.0")
     devpi(
