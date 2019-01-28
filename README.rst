@@ -55,9 +55,9 @@ To create a new *push request* with packages from the currently selected index t
 
 .. code-block:: bash
 
-    $ devpi new-pr 20180322 pkg-app==1.0 app-dependency==1.2 prod/main
+    $ devpi new-pr 20180322 prod/main pkg-app==1.0 app-dependency==1.2
 
-This creates a new *merge index* named ``+pr-20180322`` and adds the two packages to it.
+This creates a new *merge index* named ``+pr-20180322`` and adds the two packages from the current index to it.
 
 It's possible to upload and push further packages at this point.
 

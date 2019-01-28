@@ -157,6 +157,36 @@ def test_approval(capfd, devpi, getjson, makepkg):
         'who': '%s' % devpi.user}
 
 
+def test_add_on_create(capfd, devpi, getjson, makepkg):
+    pkg = makepkg("hello-1.0.tar.gz", b"content1", "hello", "1.0")
+    devpi(
+        "upload",
+        "--index", "dev",
+        pkg.strpath)
+    devpi(
+        "new-pr",
+        "20190128",
+        "%s/dev" % devpi.user,
+        "hello==1.0",
+        code=200)
+    # clear output
+    capfd.readouterr()
+    devpi(
+        "list-prs",
+        code=200)
+    (out, err) = capfd.readouterr()
+    lines = list(x.strip() for x in out.splitlines()[-2:])
+    assert lines[0] == "new push requests"
+    assert lines[1].startswith(
+        "{user}/20190128 -> {user}/dev".format(user=devpi.user))
+    data = getjson("/%s/+pr-20190128" % devpi.user)["result"]
+    assert data["projects"] == ["hello"]
+    data = getjson("/%s/+pr-20190128/hello" % devpi.user)["result"]
+    assert list(data.keys()) == ["1.0"]
+    (link,) = data["1.0"]["+links"]
+    assert "hello-1.0.tar.gz" in link["href"]
+
+
 def test_pr_listing(capfd, devpi, getjson, makepkg):
     # a new one
     devpi(

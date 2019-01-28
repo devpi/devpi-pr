@@ -1,3 +1,4 @@
+from devpi_common.metadata import parse_requirement
 from pluggy import HookimplMarker
 
 
@@ -21,27 +22,43 @@ def new_pr_arguments(parser):
     """ create push request
     """
     parser.add_argument(
-        "name", type=str, action="store", nargs=1,
+        "name", metavar="NAME", type=str, action="store", nargs=1,
         help="push request name")
-    parser.add_argument(
-        "pkgspec", metavar="pkgspec", type=str, nargs="*",
-        default=None, action="store",
-        help="releases in format 'name==version' which are added to "
-             "this push request.")
     parser.add_argument(
         "target", metavar="TARGETSPEC", type=str, nargs=1,
         action="store",
         help="target index of form 'USER/NAME'")
+    parser.add_argument(
+        "pkgspec", metavar="PKGSPEC", type=str, nargs="*",
+        default=None, action="store",
+        help="releases in format 'name==version' which are added to "
+             "this push request.")
 
 
 def new_pr(hub, args):
     (name,) = args.name
     (target,) = args.target
+    reqs = []
+    for pkgspec in args.pkgspec:
+        req = parse_requirement(pkgspec)
+        if len(req.specs) != 1 or req.specs[0][0] != '==':
+            hub.fatal(
+                "The release specification needs to be of this form: name==version")
+        reqs.append(req)
     indexname = full_indexname(hub, name)
     url = hub.current.get_index_url(indexname, slash=False)
     hub.http_api("put", url, dict(
         type="merge", bases=target,
         states=["new"], messages=["New push request"]))
+    for req in reqs:
+        hub.http_api(
+            "push",
+            hub.current.index,
+            kvdict=dict(
+                name=req.project_name,
+                version="%s" % req.specs[0][1],
+                targetindex=indexname),
+            fatal=True)
 
 
 def approve_pr_arguments(parser):
