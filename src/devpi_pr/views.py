@@ -1,4 +1,5 @@
 from .utils import get_last_serial_for_merge_index
+from devpi_server.log import threadlog as log
 from devpi_server.views import apireturn
 from pyramid.view import view_config
 
@@ -6,19 +7,21 @@ from pyramid.view import view_config
 @view_config(route_name="pr-list", request_method="GET")
 def pr_list(context, request):
     result = {}
-    if not context.stage.ixconfig.get("push_requests_allowed", False):
-        apireturn(
-            400, "Push requests to '%s' not allowed" % context.stage.name)
+    targetindex_name = None
+    if context.stage.ixconfig.get("push_requests_allowed", False):
+        targetindex_name = context.stage.name
     for user in context.model.get_userlist():
         for name, ixconfig in user.get()["indexes"].items():
             if ixconfig["type"] != "merge":
                 continue
             state = ixconfig["states"][-1]
             add_index = False
-            print(user.name, name, request.authenticated_userid, state)
-            if user.name == request.authenticated_userid and state == "new":
+            log.debug(
+                "pr_list user.name: %s name: %s auth_id: %s state: %s",
+                user.name, name, request.authenticated_userid, state)
+            if user.name == request.authenticated_userid:
                 add_index = True
-            if context.stage.name in ixconfig['bases']:
+            if targetindex_name in ixconfig['bases']:
                 add_index = True
             if add_index is False:
                 continue

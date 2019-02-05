@@ -309,3 +309,19 @@ def test_pr_list_serial(mapp, new_mergeindex, targetindex, testapp):
         'name': 'index',
         'base': 'targetuser/targetindex',
         'last_serial': 9}]}}
+
+
+def test_pr_list_submitted(mapp, new_mergeindex, targetindex, testapp):
+    content1 = mapp.makepkg("hello-1.0.tar.gz", b"content1", "hello", "1.0")
+    mapp.upload_file_pypi(
+        "hello-1.0.tar.gz", content1, "hello", "1.0",
+        set_whitelist=False)
+    r = testapp.patch_json(new_mergeindex.index, [
+        'states+=pending',
+        'messages+=Please approve'])
+    r = testapp.get_json(new_mergeindex.index + "/+pr-list")
+    result = r.json['result']
+    assert result == {'pending': {'mergeuser': [{
+        'name': 'index',
+        'base': 'targetuser/targetindex',
+        'last_serial': 8}]}}
