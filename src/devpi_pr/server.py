@@ -2,7 +2,6 @@ from .utils import get_last_serial_for_merge_index
 from devpi_server.model import BaseStageCustomizer
 from devpi_server.model import ensure_list
 from devpi_server.model import is_valid_name
-from devpi_server.views import apireturn
 from pluggy import HookimplMarker
 
 
@@ -114,15 +113,15 @@ class MergeStage(BaseStageCustomizer):
             try:
                 pr_serial = int(pr_serial)
             except TypeError:
-                apireturn(
+                request.apifatal(
                     400, message="missing X-Devpi-PR-Serial request header")
             merge_serial = get_last_serial_for_merge_index(self.stage)
             if pr_serial != merge_serial:
-                apireturn(
+                request.apifatal(
                     400, message="got X-Devpi-PR-Serial %s, expected %s" % (
                         pr_serial, merge_serial))
             if not request.has_permission("pypi_submit", context=target):
-                apireturn(401, message="user %r cannot upload to %r" % (
+                request.apifatal(401, message="user %r cannot upload to %r" % (
                     request.authenticated_userid, target.name))
             for project in self.stage.list_projects_perstage():
                 version = self.stage.get_latest_version_perstage('hello')
@@ -154,7 +153,7 @@ class MergeStage(BaseStageCustomizer):
                     "not authorized" % state])
         else:
             if not request.has_permission("index_modify"):
-                apireturn(403, "not allowed to modify index")
+                request.apifatal(403, "not allowed to modify index")
 
 
 @server_hookimpl

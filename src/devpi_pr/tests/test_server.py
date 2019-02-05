@@ -227,6 +227,29 @@ def test_approve_already_approved(mapp, mergeindex, targetindex, testapp):
         "State transition from 'approved' to 'approved' not allowed")
 
 
+def test_approve_wrong_serial(mapp, mergeindex, targetindex, testapp):
+    # the mergeindex has one project
+    r = testapp.get_json(mergeindex.index)
+    assert r.json['result']['projects'] == ['hello']
+    # the targetindex has no project yet
+    r = testapp.get_json(targetindex.index)
+    assert r.json['result']['projects'] == []
+    # we approve the merge index
+    mapp.login(targetindex.stagename.split('/')[0], "123")
+    headers = {'X-Devpi-PR-Serial': '1'}
+    r = testapp.patch_json(mergeindex.index, [
+        'states+=approved',
+        'messages+=Approve'], headers=headers, expect_errors=True)
+    assert r.json["message"] == "got X-Devpi-PR-Serial 1, expected 8"
+    r = testapp.get_json(mergeindex.index)
+    result = r.json['result']
+    assert result['type'] == 'merge'
+    assert result['acl_upload'] == ['mergeuser']
+    assert result['bases'] == [targetindex.stagename]
+    assert result['messages'] == ['New push request', 'Please approve']
+    assert result['states'] == ['new', 'pending']
+
+
 def test_pr_list(mapp, new_mergeindex, targetindex, testapp):
     r = testapp.get_json(targetindex.index + "/+pr-list")
     result = r.json['result']
