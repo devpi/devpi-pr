@@ -10,6 +10,12 @@ import traceback
 client_hookimpl = HookimplMarker("devpiclient")
 
 
+def get_message_from_file(f):
+    lines = f.read().decode('utf-8').splitlines()
+    msg = '\n'.join(x for x in lines if not x.strip().startswith('#'))
+    return msg.strip()
+
+
 def get_message(hub, msg):
     if msg and msg.strip():
         return msg
@@ -29,9 +35,11 @@ def get_message(hub, msg):
         if result != 0:
             hub.fatal("Error (%s) calling editor %s" % (result, editor))
         tf.seek(0)
-        lines = tf.read().decode('utf-8').splitlines()
-        msg = '\n'.join(x for x in lines if not x.strip().startswith('#'))
-        msg = msg.strip()
+        msg = get_message_from_file(tf)
+        if not msg:
+            # try to reopen the file. vim seems to replace it.
+            with open(tf.name, 'rb') as f:
+                msg = get_message_from_file(f)
         if msg:
             return msg
     hub.fatal("A message is required.")
