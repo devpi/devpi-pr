@@ -199,6 +199,34 @@ def test_cancel_pending(mapp, mergeindex, targetindex, testapp):
     assert result['states'] == ['new', 'pending', 'new']
 
 
+def test_approve_already_approved(mapp, mergeindex, targetindex, testapp):
+    # the mergeindex has one project
+    r = testapp.get_json(mergeindex.index)
+    assert r.json['result']['projects'] == ['hello']
+    # the targetindex has no project yet
+    r = testapp.get_json(targetindex.index)
+    assert r.json['result']['projects'] == []
+    # we approve the merge index
+    mapp.login(targetindex.stagename.split('/')[0], "123")
+    headers = {'X-Devpi-PR-Serial': '8'}
+    r = testapp.patch_json(mergeindex.index, [
+        'states+=approved',
+        'messages+=Approve'], headers=headers, expect_errors=True)
+    result = r.json['result']
+    assert result['type'] == 'merge'
+    assert result['acl_upload'] == ['mergeuser']
+    assert result['bases'] == [targetindex.stagename]
+    assert result['messages'] == ['New push request', 'Please approve', 'Approve']
+    assert result['states'] == ['new', 'pending', 'approved']
+    # we try it again
+    headers = {'X-Devpi-PR-Serial': '9'}
+    r = testapp.patch_json(mergeindex.index, [
+        'states+=approved',
+        'messages+=Approve'], headers=headers, expect_errors=True)
+    assert r.json["message"] == (
+        "State transition from 'approved' to 'approved' not allowed")
+
+
 def test_pr_list(mapp, new_mergeindex, targetindex, testapp):
     r = testapp.get_json(targetindex.index + "/+pr-list")
     result = r.json['result']

@@ -72,11 +72,17 @@ class MergeStage(BaseStageCustomizer):
             if newstate != "new":
                 errors.append("A new merge index must have state 'new'")
         else:
+            new_state_count = len(newconfig["states"])
             old_message_count = len(oldconfig["messages"])
             oldstate = oldconfig["states"][-1]
+            old_state_count = len(oldconfig["states"])
             if oldstate != newstate:
                 if new_message_count != old_message_count + 1:
                     errors.append("A state change on a merge index requires a message")
+            elif old_state_count != new_state_count:
+                errors.append(
+                    "State transition from '%s' to '%s' not allowed" % (
+                        oldstate, newstate))
             if old_message_count > new_message_count:
                 errors.append("Messages can't be removed from merge index")
             if oldconfig["messages"] != newconfig["messages"][:old_message_count]:
