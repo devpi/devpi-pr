@@ -24,12 +24,13 @@ def is_stage_empty(stage):
 
 
 class MergeStage(BaseStageCustomizer):
-    def verify_name(self, indexname):
+    @classmethod
+    def verify_name(cls, indexname):
         if not indexname.startswith('+pr-'):
-            raise self.InvalidIndex(
+            raise cls.InvalidIndex(
                 "indexname '%s' must start with '+pr-'." % indexname)
         if not is_valid_name(indexname[4:]):
-            raise self.InvalidIndex(
+            raise cls.InvalidIndex(
                 "indexname '%s' contains characters that aren't allowed. "
                 "Any ascii symbol besides -.@_ after '+pr-' is blocked." % indexname[4:])
 
@@ -68,7 +69,7 @@ class MergeStage(BaseStageCustomizer):
         if set(oldconfig.keys()) == set(['type']):
             # creating new stage
             assert newconfig["type"] == "merge"
-            if newstate != "new":
+            if newconfig["states"][0] != "new":
                 errors.append("A new merge index must have state 'new'")
         else:
             new_state_count = len(newconfig["states"])
@@ -94,8 +95,8 @@ class MergeStage(BaseStageCustomizer):
                     errors.append(
                         "State transition from '%s' to '%s' not allowed" % (
                             oldstate, newstate))
-        if len(newconfig["bases"]) != 1:
-            errors.append("A merge index must have exactly one base")
+            if len(newconfig["bases"]) != 1:
+                errors.append("A merge index must have exactly one base")
         if errors:
             raise self.InvalidIndexconfig(errors)
 
