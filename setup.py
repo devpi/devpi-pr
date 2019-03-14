@@ -32,6 +32,11 @@ setup(
             "devpi-pr = devpi_pr.server"]},
     install_requires=[],
     extras_require={
+        'dev': [
+            'pytest',
+            'pytest-cov',
+            'pytest-flake8',
+            'webtest'],
         'client': [
             'devpi-client>=4.2.1.dev0'],
         'server': [

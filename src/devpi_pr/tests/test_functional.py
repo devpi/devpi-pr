@@ -1,4 +1,3 @@
-import json
 import pytest
 try:
     from devpi_server import __version__  # noqa
