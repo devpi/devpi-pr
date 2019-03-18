@@ -93,7 +93,8 @@ def test_index_creation(capfd, devpi, getjson, makepkg):
         "Please accept these updated packages"]
 
 
-def test_approval(capfd, devpi, getjson, makepkg):
+@pytest.mark.parametrize("keep_index", (True, False))
+def test_approval(capfd, devpi, getjson, keep_index, makepkg):
     devpi(
         "new-pr",
         "20180717",
@@ -122,18 +123,22 @@ def test_approval(capfd, devpi, getjson, makepkg):
     lines = out.splitlines()
     assert 'pending push requests' in lines[-2]
     serial = lines[-1].split()[-1]
-    devpi(
+    args = [
         "approve-pr",
         "%s/20180717" % devpi.user,
         "%s" % serial,
-        "-m", "The push request was accepted",
-        code=200)
-    data = getjson("+pr-20180717")["result"]
-    assert data["states"] == ["new", "pending", "approved"]
-    assert data["messages"] == [
-        "New push request",
-        "Please accept these updated packages",
-        "The push request was accepted"]
+        "-m", "The push request was accepted"]
+    if keep_index:
+        args.append('--keep-index')
+        devpi(*args, code=200)
+        data = getjson("+pr-20180717")["result"]
+        assert data["states"] == ["new", "pending", "approved"]
+        assert data["messages"] == [
+            "New push request",
+            "Please accept these updated packages",
+            "The push request was accepted"]
+    else:
+        devpi(*args, code=201)
     data = getjson("%s/dev" % devpi.target)["result"]
     assert data['projects'] == ['hello']
     data = getjson("%s/dev/hello" % devpi.target)["result"]

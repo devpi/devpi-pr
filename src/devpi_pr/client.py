@@ -113,6 +113,9 @@ def approve_pr_arguments(parser):
     parser.add_argument(
         "-m", "--message", action="store",
         help="Message to add on submit.")
+    parser.add_argument(
+        "-k", "--keep-index", action="store_true",
+        help="Keep the merge index instead of deleting it after approval.")
 
 
 def approve_pr(hub, args):
@@ -126,6 +129,8 @@ def approve_pr(hub, args):
             "states+=approved",
             "messages+=%s" % message],
         headers={'X-Devpi-PR-Serial': serial})
+    if not args.keep_index:
+        hub.http_api("delete", url)
 
 
 def list_prs_arguments(parser):

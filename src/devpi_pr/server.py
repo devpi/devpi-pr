@@ -98,6 +98,16 @@ class MergeStage(BaseStageCustomizer):
         targetindex = ixconfig["bases"][0]
         return self.stage.model.getstage(*targetindex.split("/"))
 
+    def get_index_delete_principals(self, **kwargs):
+        principals = super(MergeStage, self).get_index_delete_principals(**kwargs)
+        state = self.stage.ixconfig['states'][-1]
+        if state == 'approved':
+            # when approved, the principals in the target acl_upload are
+            # allowed to delete this index
+            target = self._get_target_stage()
+            principals.update(target.ixconfig.get('acl_upload', []))
+        return principals
+
     def get_index_modify_principals(self, **kwargs):
         principals = super(MergeStage, self).get_index_modify_principals(**kwargs)
         state = self.stage.ixconfig['states'][-1]
