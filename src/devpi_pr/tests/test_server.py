@@ -143,7 +143,7 @@ def test_approve_pending(mapp, mergeindex, targetindex, testapp):
     headers = {'X-Devpi-PR-Serial': '8'}
     r = testapp.patch_json(mergeindex.index, [
         'states+=approved',
-        'messages+=Approve'], headers=headers, expect_errors=True)
+        'messages+=Approve'], headers=headers)
     result = r.json['result']
     assert result['type'] == 'merge'
     assert result['acl_upload'] == ['mergeuser']
@@ -190,7 +190,7 @@ def test_reject_pending_not_possible_for_mergeuser(mapp, mergeindex, testapp):
 def test_cancel_pending(mapp, mergeindex, targetindex, testapp):
     r = testapp.patch_json(mergeindex.index, [
         'states+=new',
-        'messages+=Cancel'], expect_errors=True)
+        'messages+=Cancel'])
     result = r.json['result']
     assert result['type'] == 'merge'
     assert result['acl_upload'] == ['mergeuser']
@@ -211,7 +211,7 @@ def test_approve_already_approved(mapp, mergeindex, targetindex, testapp):
     headers = {'X-Devpi-PR-Serial': '8'}
     r = testapp.patch_json(mergeindex.index, [
         'states+=approved',
-        'messages+=Approve'], headers=headers, expect_errors=True)
+        'messages+=Approve'], headers=headers)
     result = r.json['result']
     assert result['type'] == 'merge'
     assert result['acl_upload'] == ['mergeuser']
@@ -223,8 +223,7 @@ def test_approve_already_approved(mapp, mergeindex, targetindex, testapp):
     r = testapp.patch_json(mergeindex.index, [
         'states+=approved',
         'messages+=Approve'], headers=headers, expect_errors=True)
-    assert r.json["message"] == (
-        "State transition from 'approved' to 'approved' not allowed")
+    assert r.status_code == 403
 
 
 def test_approve_wrong_serial(mapp, mergeindex, targetindex, testapp):

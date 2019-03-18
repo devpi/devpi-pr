@@ -34,22 +34,15 @@ class MergeStage(BaseStageCustomizer):
                 "indexname '%s' contains characters that aren't allowed. "
                 "Any ascii symbol besides -.@_ after '+pr-' is blocked." % indexname[4:])
 
-    def get_indexconfig_items(self, **kwargs):
-        errors = []
-        ixconfig = {}
+    def iter_indexconfig_items(self, **kwargs):
         if not kwargs.get("states"):
-            errors.append("A merge index requires a state")
-        else:
-            ixconfig["states"] = ensure_list(kwargs.pop("states"))
+            raise self.InvalidIndexconfig(["A merge index requires a state"])
+        yield ("states", ensure_list(kwargs["states"]))
         if not kwargs.get("messages"):
-            errors.append("A merge index requires messages")
-        else:
-            ixconfig["messages"] = ensure_list(kwargs.pop("messages"))
-        if errors:
-            raise self.InvalidIndexconfig(errors)
-        return ixconfig.items()
+            raise self.InvalidIndexconfig(["A merge index requires messages"])
+        yield ("messages", ensure_list(kwargs["messages"]))
 
-    def validate_ixconfig(self, oldconfig, newconfig):
+    def validate_config(self, oldconfig, newconfig):
         errors = []
         newstate = newconfig["states"][-1]
         if newstate == "pending":
@@ -100,14 +93,24 @@ class MergeStage(BaseStageCustomizer):
         if errors:
             raise self.InvalidIndexconfig(errors)
 
-    def ixconfig_pre_modify(self, request):
-        pass
-
-    def ixconfig_post_modify(self, request, oldconfig):
-        context = request.context
+    def _get_target_stage(self):
         ixconfig = self.stage.ixconfig
         targetindex = ixconfig["bases"][0]
-        target = context.getstage(*targetindex.split("/"))
+        return self.stage.model.getstage(*targetindex.split("/"))
+
+    def get_index_modify_principals(self, **kwargs):
+        principals = super(MergeStage, self).get_index_modify_principals(**kwargs)
+        state = self.stage.ixconfig['states'][-1]
+        if state == 'pending':
+            # when pending, the principals in the target acl_upload are
+            # allowed to modify this index to change it's state etc
+            target = self._get_target_stage()
+            principals.update(target.ixconfig.get('acl_upload', []))
+        return principals
+
+    def on_modified(self, request, oldconfig):
+        ixconfig = self.stage.ixconfig
+        target = self._get_target_stage()
         state = ixconfig["states"][-1]
         if state == "approved":
             pr_serial = request.headers.get('X-Devpi-PR-Serial')
@@ -152,9 +155,6 @@ class MergeStage(BaseStageCustomizer):
                 raise self.InvalidIndexconfig([
                     "State transition to '%s' "
                     "not authorized" % state])
-        else:
-            if not request.has_permission("index_modify"):
-                request.apifatal(403, "not allowed to modify index")
 
 
 @server_hookimpl
