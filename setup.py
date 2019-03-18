@@ -38,9 +38,9 @@ setup(
             'pytest-flake8',
             'webtest'],
         'client': [
-            'devpi-client>=4.2.1.dev0'],
+            'devpi-client>=4.3.0'],
         'server': [
-            'devpi-server>=4.8.1.dev0']},
+            'devpi-server>=4.8.2.dev0']},
     include_package_data=True,
     zip_safe=False,
     python_requires=">=3.4",
