@@ -51,7 +51,7 @@ With devpi-client new-pr command
 The ``devpi-pr`` plugin adds new commands when installed alongside ``devpi-client``.
 
 Lets say the currently used index has packages ``pkg-app 1.0`` and ``app-dependency 1.2``.
-To create a new *push request* with packages from the currently selected index to the target index ``prod/main``, the following command is used:
+To create a new *push request* with packages from the currently selected index to the target index ``prod/main`` the following command is used:
 
 .. code-block:: bash
 
@@ -67,7 +67,8 @@ Afterwards it can be submitted like this:
 
     $ devpi submit-pr 20180322
 
-When the EDITOR environment variable is set, it is used to open an editor to provide a message for the *push request*, otherwise a simple prompt is used.
+When the EDITOR environment variable is set it is used to open an editor to provide a message for the *push request*,
+otherwise a simple prompt is used.
 Optionally the message can be added directly to the *push request* with the ``-m`` option of the ``submit-pr`` command.
 
 The state of the *merge index* is now set to ``pending``.
@@ -77,9 +78,11 @@ Manually in separate steps
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 It's also possible to create a *push request* manually.
-This allows more fine grained control over the process and works without ``devpi-pr`` installed alongside ``devpi-client``.
+This works without ``devpi-pr`` installed alongside ``devpi-client``,
+but is more complex.
 
-First a new *merge index* needs to be created. The index name must start with ``+pr-``, be of type ``merge`` and the target index specified in ``bases``:
+First a new *merge index* needs to be created.
+The index name must start with ``+pr-``, be of type ``merge`` and the target index specified in ``bases``:
 
 .. code-block:: bash
 
@@ -101,11 +104,14 @@ This requires the ``devpi-pr`` plugin on the client side.
 
 The ``devpi-pr`` plugin adds the new commands ``new-pr``, ``approve-pr``, ``delete-pr``, ``list-prs``, ``reject-pr`` and ``submit-pr`` when installed alongside ``devpi-client``.
 
-If the target index has the ``push_requests_allowed`` option set to ``True``, then all users in ``acl_upload`` can manage incoming *push requests*, otherwise an error is returned.
+If the target index has the ``push_requests_allowed`` option set to ``True``,
+then all users in ``acl_upload`` can manage incoming *push requests*,
+otherwise an error is returned.
 
 All commands which change the state of a *push request* ask for a message and accept the ``-m`` option to provide it directly.
 
-To list all pending *push requests* for a target index, use the ``list-prs`` command with the name of the target index:
+To list all pending *push requests* for a target index,
+use the ``list-prs`` command with the name of the target index:
 
 .. code-block:: bash
 
@@ -136,7 +142,7 @@ With tox (test) result infos:
 
 The ``10`` after the name is the current serial number needed for other commands to avoid surprises when something changed in the meantime.
 
-To approve or reject a *push request*, use ``approve-pr`` and ``reject-pr``:
+To approve or reject a *push request* use ``approve-pr`` and ``reject-pr``:
 
 .. code-block:: bash
 
