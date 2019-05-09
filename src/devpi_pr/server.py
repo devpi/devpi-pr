@@ -179,14 +179,13 @@ def devpiserver_get_stage_customizer_classes():
 
 @server_hookimpl
 def devpiserver_indexconfig_defaults(index_type):
-    if index_type == "mirror":
-        return {}
+    if index_type == "merge":
+        return {
+            'states': [],
+            'messages': []}
     if index_type == "stage":
         return {
             'push_requests_allowed': False}
-    return {
-        'states': [],
-        'messages': []}
     return {}
 
 
