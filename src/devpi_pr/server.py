@@ -142,15 +142,20 @@ class MergeStage(BaseStageCustomizer):
                 linkstore = self.stage.get_linkstore_perstage(project, version)
                 target.set_versiondata(linkstore.metadata)
                 for link in linkstore.get_links():
-                    if link.rel == 'doczip':
-                        new_link = target.store_doczip(
-                            project, version,
-                            link.entry.file_get_content())
-                    else:
-                        new_link = target.store_releasefile(
-                            project, version,
-                            link.basename, link.entry.file_get_content(),
-                            last_modified=link.entry.last_modified)
+                    try:
+                        if link.rel == 'doczip':
+                            new_link = target.store_doczip(
+                                project, version,
+                                link.entry.file_get_content())
+                        else:
+                            new_link = target.store_releasefile(
+                                project, version,
+                                link.basename, link.entry.file_get_content(),
+                                last_modified=link.entry.last_modified)
+                    except target.NonVolatile as e:
+                        request.apifatal(
+                            409, "%s already exists in non-volatile index" % (
+                                e.link.basename,))
                     new_link.add_logs(
                         x for x in link.get_logs()
                         if x.get('what') != 'overwrite')

@@ -249,6 +249,52 @@ def test_approve_wrong_serial(mapp, mergeindex, targetindex, testapp):
     assert result['states'] == ['new', 'pending']
 
 
+def test_approve_nonvolatile_conflict(mapp, mergeindex, targetindex, testapp):
+    # make target index non volatile
+    mapp.login(targetindex.stagename.split('/')[0], "123")
+    testapp.patch_json(targetindex.index, ['volatile=False'])
+    # the mergeindex has one project
+    r = testapp.get_json(mergeindex.index)
+    assert r.json['result']['projects'] == ['pkg']
+    # the targetindex has no project yet
+    r = testapp.get_json(targetindex.index)
+    assert r.json['result']['projects'] == []
+    # the targetindex is actually non volatile
+    assert r.json['result']['volatile'] is False
+    # we approve the merge index
+    headers = {'X-Devpi-PR-Serial': '8'}
+    r = testapp.patch_json(mergeindex.index, [
+        'states+=approved',
+        'messages+=Approve'], headers=headers)
+    # now the targetindex should have the project
+    r = testapp.get_json(targetindex.index)
+    assert r.json['result']['projects'] == ['pkg']
+    # create another merge index with conflicting pkg
+    mapp.login(mergeindex.stagename.split('/')[0], "123")
+    othermergeindex = mapp.create_index(
+        "+pr-other",
+        indexconfig=dict(
+            type="merge",
+            states="new",
+            messages="New push request",
+            bases=[targetindex.stagename]))
+    content1 = mapp.makepkg("pkg-1.0.tar.gz", b"content1", "pkg", "1.0")
+    mapp.upload_file_pypi(
+        "pkg-1.0.tar.gz", content1, "pkg", "1.0",
+        set_whitelist=False)
+    r = testapp.patch_json(othermergeindex.index, [
+        'states+=pending',
+        'messages+=Please approve'])
+    serial = r.headers['X-Devpi-Serial']
+    headers = {'X-Devpi-PR-Serial': serial}
+    mapp.login(targetindex.stagename.split('/')[0], "123")
+    r = testapp.patch_json(othermergeindex.index, [
+        'states+=approved',
+        'messages+=Approve'], headers=headers, expect_errors=True)
+    assert r.status_code == 409
+    assert r.json['message'] == "pkg-1.0.tar.gz already exists in non-volatile index"
+
+
 def test_pr_list(mapp, new_mergeindex, targetindex, testapp):
     r = testapp.get_json(targetindex.index + "/+pr-list")
     result = r.json['result']
