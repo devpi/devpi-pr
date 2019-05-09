@@ -353,3 +353,26 @@ def test_pr_listing(capfd, devpi, getjson, makepkg):
     devpi(
         "list-prs",
         code=200)
+
+
+def test_index_not_found(capfd, devpi):
+    devpi("approve-pr", "nonexisting", "10", "-m", "msg", code=404)
+    (out, err) = capfd.readouterr()
+    last_line = out.splitlines()[-1].strip()
+    assert last_line == "Couldn't access merge index 'nonexisting': Not Found"
+    devpi("reject-pr", "nonexisting", "-m", "msg", code=404)
+    (out, err) = capfd.readouterr()
+    last_line = out.splitlines()[-1].strip()
+    assert last_line == "Couldn't access merge index 'nonexisting': Not Found"
+    devpi("submit-pr", "nonexisting", "-m", "msg", code=404)
+    (out, err) = capfd.readouterr()
+    last_line = out.splitlines()[-1].strip()
+    assert last_line == "Couldn't access merge index 'nonexisting': Not Found"
+    devpi("cancel-pr", "nonexisting", "-m", "msg", code=404)
+    (out, err) = capfd.readouterr()
+    last_line = out.splitlines()[-1].strip()
+    assert last_line == "Couldn't access merge index 'nonexisting': Not Found"
+    devpi("delete-pr", "nonexisting", code=404)
+    (out, err) = capfd.readouterr()
+    last_line = out.splitlines()[-1].strip()
+    assert last_line == "Couldn't access merge index 'nonexisting': Not Found"

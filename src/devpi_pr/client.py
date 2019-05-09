@@ -58,6 +58,20 @@ def full_indexname(hub, prname):
     return "%s/%s" % (user, prname)
 
 
+def require_merge_index(hub, name):
+    hub.requires_login()
+    current = hub.require_valid_current_with_index()
+    indexname = full_indexname(hub, name)
+    url = current.get_index_url(indexname, slash=False)
+    result = hub.http_api("get", url, fatal=False)
+    if result.reason != 'OK':
+        hub.fatal("Couldn't access merge index '%s': %s" % (
+            name, result.reason))
+    if result.result['type'] != 'merge':
+        hub.fatal("The index '%s' is not a merge index" % name)
+    return (indexname, url)
+
+
 def new_pr_arguments(parser):
     """ create push request
     """
@@ -120,10 +134,9 @@ def approve_pr_arguments(parser):
 
 def approve_pr(hub, args):
     (name,) = args.name
+    (indexname, url) = require_merge_index(hub, name)
     (serial,) = args.serial
     message = get_message(hub, args.message)
-    indexname = full_indexname(hub, name)
-    url = hub.current.get_index_url(indexname, slash=False)
     hub.http_api(
         "patch", url, [
             "states+=approved",
@@ -185,12 +198,9 @@ def reject_pr_arguments(parser):
 
 
 def reject_pr(hub, args):
-    hub.requires_login()
-    current = hub.require_valid_current_with_index()
     (name,) = args.name
+    (indexname, url) = require_merge_index(hub, name)
     message = get_message(hub, args.message)
-    indexname = full_indexname(hub, name)
-    url = current.get_index_url(indexname, slash=False)
     hub.http_api("patch", url, [
         "states+=rejected",
         "messages+=%s" % message])
@@ -208,12 +218,9 @@ def submit_pr_arguments(parser):
 
 
 def submit_pr(hub, args):
-    hub.requires_login()
-    current = hub.require_valid_current_with_index()
     (name,) = args.name
+    (indexname, url) = require_merge_index(hub, name)
     message = get_message(hub, args.message)
-    indexname = full_indexname(hub, name)
-    url = current.get_index_url(indexname, slash=False)
     hub.http_api("patch", url, [
         "states+=pending",
         "messages+=%s" % message])
@@ -231,12 +238,9 @@ def cancel_pr_arguments(parser):
 
 
 def cancel_pr(hub, args):
-    hub.requires_login()
-    current = hub.require_valid_current_with_index()
     (name,) = args.name
+    (indexname, url) = require_merge_index(hub, name)
     message = get_message(hub, args.message)
-    indexname = full_indexname(hub, name)
-    url = current.get_index_url(indexname, slash=False)
     hub.http_api("patch", url, [
         "states+=new",
         "messages+=%s" % message])
@@ -251,11 +255,8 @@ def delete_pr_arguments(parser):
 
 
 def delete_pr(hub, args):
-    hub.requires_login()
-    current = hub.require_valid_current_with_index()
     (name,) = args.name
-    indexname = full_indexname(hub, name)
-    url = current.get_index_url(indexname, slash=False)
+    (indexname, url) = require_merge_index(hub, name)
     hub.http_api("delete", url)
 
 
