@@ -53,9 +53,9 @@ def new_mergeindex(mapp, targetindex):
 
 @pytest.fixture
 def mergeindex(mapp, new_mergeindex, targetindex, testapp):
-    content1 = mapp.makepkg("hello-1.0.tar.gz", b"content1", "hello", "1.0")
+    content1 = mapp.makepkg("pkg-1.0.tar.gz", b"content1", "pkg", "1.0")
     mapp.upload_file_pypi(
-        "hello-1.0.tar.gz", content1, "hello", "1.0",
+        "pkg-1.0.tar.gz", content1, "pkg", "1.0",
         set_whitelist=False)
     testapp.patch_json(new_mergeindex.index, [
         'states+=pending',
@@ -99,9 +99,9 @@ def test_submit_empty_merge_index(new_mergeindex, targetindex, testapp):
 
 
 def test_submit_merge_index(mapp, new_mergeindex, targetindex, testapp):
-    content1 = mapp.makepkg("hello-1.0.tar.gz", b"content1", "hello", "1.0")
+    content1 = mapp.makepkg("pkg-1.0.tar.gz", b"content1", "pkg", "1.0")
     mapp.upload_file_pypi(
-        "hello-1.0.tar.gz", content1, "hello", "1.0",
+        "pkg-1.0.tar.gz", content1, "pkg", "1.0",
         set_whitelist=False)
     r = testapp.patch_json(new_mergeindex.index, [
         'states+=pending',
@@ -134,7 +134,7 @@ def test_approve_pending_not_possible_for_mergeuser(mapp, mergeindex, targetinde
 def test_approve_pending(mapp, mergeindex, targetindex, testapp):
     # the mergeindex has one project
     r = testapp.get_json(mergeindex.index)
-    assert r.json['result']['projects'] == ['hello']
+    assert r.json['result']['projects'] == ['pkg']
     # the targetindex has no project yet
     r = testapp.get_json(targetindex.index)
     assert r.json['result']['projects'] == []
@@ -152,11 +152,11 @@ def test_approve_pending(mapp, mergeindex, targetindex, testapp):
     assert result['states'] == ['new', 'pending', 'approved']
     # now the targetindex should have the project
     r = testapp.get_json(targetindex.index)
-    assert r.json['result']['projects'] == ['hello']
-    r = testapp.get_json(targetindex.index + '/hello')
+    assert r.json['result']['projects'] == ['pkg']
+    r = testapp.get_json(targetindex.index + '/pkg')
     result = r.json['result']
     assert list(result.keys()) == ['1.0']
-    assert result['1.0']['name'] == 'hello'
+    assert result['1.0']['name'] == 'pkg'
     assert result['1.0']['version'] == '1.0'
     links = result['1.0']['+links']
     assert len(links) == 1
@@ -175,9 +175,9 @@ def test_approve_pending(mapp, mergeindex, targetindex, testapp):
         'src': 'mergeuser/+pr-index',
         'what': 'push',
         'who': 'targetuser'}
-    releases = mapp.getreleaseslist('hello', indexname=targetindex.stagename)
+    releases = mapp.getreleaseslist('pkg', indexname=targetindex.stagename)
     assert releases == [
-        'http://localhost/targetuser/targetindex/+f/d0b/425e00e15a0d3/hello-1.0.tar.gz']
+        'http://localhost/targetuser/targetindex/+f/d0b/425e00e15a0d3/pkg-1.0.tar.gz']
 
 
 def test_reject_pending_not_possible_for_mergeuser(mapp, mergeindex, testapp):
@@ -202,7 +202,7 @@ def test_cancel_pending(mapp, mergeindex, targetindex, testapp):
 def test_approve_already_approved(mapp, mergeindex, targetindex, testapp):
     # the mergeindex has one project
     r = testapp.get_json(mergeindex.index)
-    assert r.json['result']['projects'] == ['hello']
+    assert r.json['result']['projects'] == ['pkg']
     # the targetindex has no project yet
     r = testapp.get_json(targetindex.index)
     assert r.json['result']['projects'] == []
@@ -229,7 +229,7 @@ def test_approve_already_approved(mapp, mergeindex, targetindex, testapp):
 def test_approve_wrong_serial(mapp, mergeindex, targetindex, testapp):
     # the mergeindex has one project
     r = testapp.get_json(mergeindex.index)
-    assert r.json['result']['projects'] == ['hello']
+    assert r.json['result']['projects'] == ['pkg']
     # the targetindex has no project yet
     r = testapp.get_json(targetindex.index)
     assert r.json['result']['projects'] == []
@@ -256,9 +256,9 @@ def test_pr_list(mapp, new_mergeindex, targetindex, testapp):
         'name': 'index',
         'base': 'targetuser/targetindex',
         'last_serial': 5}]}}
-    content1 = mapp.makepkg("hello-1.0.tar.gz", b"content1", "hello", "1.0")
+    content1 = mapp.makepkg("pkg-1.0.tar.gz", b"content1", "pkg", "1.0")
     mapp.upload_file_pypi(
-        "hello-1.0.tar.gz", content1, "hello", "1.0",
+        "pkg-1.0.tar.gz", content1, "pkg", "1.0",
         set_whitelist=False)
     r = testapp.patch_json(new_mergeindex.index, [
         'states+=pending',
@@ -278,9 +278,9 @@ def test_pr_list_serial(mapp, new_mergeindex, targetindex, testapp):
         'name': 'index',
         'base': 'targetuser/targetindex',
         'last_serial': 5}]}}
-    content1 = mapp.makepkg("hello-1.0.tar.gz", b"content1", "hello", "1.0")
+    content1 = mapp.makepkg("pkg-1.0.tar.gz", b"content1", "pkg", "1.0")
     mapp.upload_file_pypi(
-        "hello-1.0.tar.gz", content1, "hello", "1.0",
+        "pkg-1.0.tar.gz", content1, "pkg", "1.0",
         set_whitelist=False)
     r = testapp.get_json(targetindex.index + "/+pr-list")
     result = r.json['result']
@@ -298,9 +298,9 @@ def test_pr_list_serial(mapp, new_mergeindex, targetindex, testapp):
         'name': 'index',
         'base': 'targetuser/targetindex',
         'last_serial': 8}]}}
-    content2 = mapp.makepkg("hello-1.0.zip", b"content2", "hello", "1.0")
+    content2 = mapp.makepkg("pkg-1.0.zip", b"content2", "pkg", "1.0")
     mapp.upload_file_pypi(
-        "hello-1.0.zip", content2, "hello", "1.0",
+        "pkg-1.0.zip", content2, "pkg", "1.0",
         set_whitelist=False)
     r = testapp.get_json(targetindex.index + "/+pr-list")
     result = r.json['result']
@@ -311,9 +311,9 @@ def test_pr_list_serial(mapp, new_mergeindex, targetindex, testapp):
 
 
 def test_pr_list_submitted(mapp, new_mergeindex, targetindex, testapp):
-    content1 = mapp.makepkg("hello-1.0.tar.gz", b"content1", "hello", "1.0")
+    content1 = mapp.makepkg("pkg-1.0.tar.gz", b"content1", "pkg", "1.0")
     mapp.upload_file_pypi(
-        "hello-1.0.tar.gz", content1, "hello", "1.0",
+        "pkg-1.0.tar.gz", content1, "pkg", "1.0",
         set_whitelist=False)
     r = testapp.patch_json(new_mergeindex.index, [
         'states+=pending',

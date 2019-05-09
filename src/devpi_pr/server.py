@@ -138,7 +138,7 @@ class MergeStage(BaseStageCustomizer):
                 request.apifatal(401, message="user %r cannot upload to %r" % (
                     request.authenticated_userid, target.name))
             for project in self.stage.list_projects_perstage():
-                version = self.stage.get_latest_version_perstage('hello')
+                version = self.stage.get_latest_version_perstage(project)
                 linkstore = self.stage.get_linkstore_perstage(project, version)
                 target.set_versiondata(linkstore.metadata)
                 for link in linkstore.get_links():
