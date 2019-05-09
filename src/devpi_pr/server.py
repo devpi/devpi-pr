@@ -34,6 +34,11 @@ class MergeStage(BaseStageCustomizer):
                 "indexname '%s' contains characters that aren't allowed. "
                 "Any ascii symbol besides -.@_ after '+pr-' is blocked." % indexname[4:])
 
+    @classmethod
+    def get_possible_indexconfig_keys(cls):
+        """ Returns all possible custom index config keys. """
+        return ('states', 'messages')
+
     def iter_indexconfig_items(self, **kwargs):
         if not kwargs.get("states"):
             raise self.InvalidIndexconfig(["A merge index requires a state"])
@@ -179,10 +184,6 @@ def devpiserver_get_stage_customizer_classes():
 
 @server_hookimpl
 def devpiserver_indexconfig_defaults(index_type):
-    if index_type == "merge":
-        return {
-            'states': [],
-            'messages': []}
     if index_type == "stage":
         return {
             'push_requests_allowed': False}
