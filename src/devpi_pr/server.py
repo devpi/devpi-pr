@@ -1,5 +1,4 @@
 from .utils import get_last_serial_for_merge_index
-from devpi_server.model import BaseStageCustomizer
 from devpi_server.model import ensure_list
 from devpi_server.model import is_valid_name
 from pluggy import HookimplMarker
@@ -23,7 +22,7 @@ def is_stage_empty(stage):
     return True
 
 
-class MergeStage(BaseStageCustomizer):
+class MergeStage(object):
     @classmethod
     def verify_name(cls, indexname):
         if not indexname.startswith('+pr-'):
