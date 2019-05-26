@@ -38,7 +38,7 @@ class MergeStage(object):
         """ Returns all possible custom index config keys. """
         return ('states', 'messages')
 
-    def iter_indexconfig_items(self, **kwargs):
+    def indexconfig_items(self, **kwargs):
         if not kwargs.get("states"):
             raise self.InvalidIndexconfig(["A merge index requires a state"])
         yield ("states", ensure_list(kwargs["states"]))
