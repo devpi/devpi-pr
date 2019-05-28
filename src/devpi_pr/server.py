@@ -27,13 +27,9 @@ class MergeStage(object):
         """ Returns all possible custom index config keys. """
         return ('states', 'messages')
 
-    def indexconfig_items(self, **kwargs):
-        if not kwargs.get("states"):
-            raise self.InvalidIndexconfig(["A merge index requires a state"])
-        yield ("states", ensure_list(kwargs["states"]))
-        if not kwargs.get("messages"):
-            raise self.InvalidIndexconfig(["A merge index requires messages"])
-        yield ("messages", ensure_list(kwargs["messages"]))
+    def normalize_indexconfig_value(self, key, value):
+        if key in ("messages", "states"):
+            return ensure_list(value)
 
     def validate_config(self, oldconfig, newconfig):
         errors = []
@@ -91,8 +87,8 @@ class MergeStage(object):
         targetindex = ixconfig["bases"][0]
         return self.stage.model.getstage(*targetindex.split("/"))
 
-    def get_index_delete_principals(self, **kwargs):
-        principals = super(MergeStage, self).get_index_delete_principals(**kwargs)
+    def get_principals_for_index_delete(self, **kwargs):
+        principals = super(MergeStage, self).get_principals_for_index_delete(**kwargs)
         state = self.stage.ixconfig['states'][-1]
         if state == 'approved':
             # when approved, the principals in the target acl_upload are
@@ -101,8 +97,8 @@ class MergeStage(object):
             principals.update(target.ixconfig.get('acl_upload', []))
         return principals
 
-    def get_index_modify_principals(self, **kwargs):
-        principals = super(MergeStage, self).get_index_modify_principals(**kwargs)
+    def get_principals_for_index_modify(self, **kwargs):
+        principals = super(MergeStage, self).get_principals_for_index_modify(**kwargs)
         state = self.stage.ixconfig['states'][-1]
         if state == 'pending':
             # when pending, the principals in the target acl_upload are
