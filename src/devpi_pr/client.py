@@ -53,8 +53,6 @@ def full_indexname(hub, prname):
             hub.fatal("Invalid index name")
     else:
         user = hub.current.get_auth_user()
-    if not prname.startswith('+pr-'):
-        prname = "+pr-%s" % prname
     return "%s/%s" % (user, prname)
 
 

@@ -1,6 +1,5 @@
 from .utils import get_last_serial_for_merge_index
 from devpi_server.model import ensure_list
-from devpi_server.model import is_valid_name
 from pluggy import HookimplMarker
 
 
@@ -23,16 +22,6 @@ def is_stage_empty(stage):
 
 
 class MergeStage(object):
-    @classmethod
-    def verify_name(cls, indexname):
-        if not indexname.startswith('+pr-'):
-            raise cls.InvalidIndex(
-                "indexname '%s' must start with '+pr-'." % indexname)
-        if not is_valid_name(indexname[4:]):
-            raise cls.InvalidIndex(
-                "indexname '%s' contains characters that aren't allowed. "
-                "Any ascii symbol besides -.@_ after '+pr-' is blocked." % indexname[4:])
-
     @classmethod
     def get_possible_indexconfig_keys(cls):
         """ Returns all possible custom index config keys. """

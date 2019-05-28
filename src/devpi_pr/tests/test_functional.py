@@ -12,56 +12,34 @@ except ImportError:
 def test_manual_index_creation(capfd, devpi, getjson, makepkg):
     devpi(
         "index", "-c",
-        "+pr-manual",
+        "manual",
         "type=merge",
         "states=new",
         "messages=New push request",
         "bases=%s/dev" % devpi.target,
         code=200)
     (out, err) = capfd.readouterr()
-    data = getjson("+pr-manual")["result"]
+    data = getjson("manual")["result"]
     assert data["type"] == "merge"
     assert data["states"] == ["new"]
     assert data["messages"] == ["New push request"]
     pkg = makepkg("hello-1.0.tar.gz", b"content1", "hello", "1.0")
     devpi(
         "upload",
-        "--index", "+pr-manual",
+        "--index", "manual",
         pkg.strpath)
     devpi(
         "index",
-        "+pr-manual",
+        "manual",
         "states+=pending",
         "messages+=Please accept these updated packages",
         code=200)
     (out, err) = capfd.readouterr()
-    data = getjson("+pr-manual")["result"]
+    data = getjson("manual")["result"]
     assert data["states"] == ["new", "pending"]
     assert data["messages"] == [
         "New push request",
         "Please accept these updated packages"]
-
-
-def test_manual_index_creation_invalid_prefix(capfd, devpi):
-    devpi(
-        "index", "-c",
-        "invalid_prefix",
-        "type=merge",
-        "bases=%s/dev" % devpi.target,
-        code=400)
-    (out, err) = capfd.readouterr()
-    assert "indexname 'invalid_prefix' must start with '+pr-'." in out
-
-
-def test_manual_index_creation_invalid_name(capfd, devpi):
-    devpi(
-        "index", "-c",
-        "+pr-invalid[name]",
-        "type=merge",
-        "bases=%s/dev" % devpi.target,
-        code=400)
-    (out, err) = capfd.readouterr()
-    assert "indexname 'invalid[name]' contains characters" in out
 
 
 def test_index_creation(capfd, devpi, getjson, makepkg):
@@ -71,14 +49,14 @@ def test_index_creation(capfd, devpi, getjson, makepkg):
         "%s/dev" % devpi.target,
         code=200)
     (out, err) = capfd.readouterr()
-    data = getjson("+pr-20180717")["result"]
+    data = getjson("20180717")["result"]
     assert data["type"] == "merge"
     assert data["states"] == ["new"]
     assert data["messages"] == ["New push request"]
     pkg = makepkg("hello-1.0.tar.gz", b"content1", "hello", "1.0")
     devpi(
         "upload",
-        "--index", "+pr-20180717",
+        "--index", "20180717",
         pkg.strpath)
     devpi(
         "submit-pr",
@@ -86,7 +64,7 @@ def test_index_creation(capfd, devpi, getjson, makepkg):
         "-m", "Please accept these updated packages",
         code=200)
     (out, err) = capfd.readouterr()
-    data = getjson("+pr-20180717")["result"]
+    data = getjson("20180717")["result"]
     assert data["states"] == ["new", "pending"]
     assert data["messages"] == [
         "New push request",
@@ -103,7 +81,7 @@ def test_approval(capfd, devpi, getjson, keep_index, makepkg):
     pkg = makepkg("hello-1.0.tar.gz", b"content1", "hello", "1.0")
     devpi(
         "upload",
-        "--index", "+pr-20180717",
+        "--index", "20180717",
         pkg.strpath)
     devpi(
         "submit-pr",
@@ -131,7 +109,7 @@ def test_approval(capfd, devpi, getjson, keep_index, makepkg):
     if keep_index:
         args.append('--keep-index')
         devpi(*args, code=200)
-        data = getjson("+pr-20180717")["result"]
+        data = getjson("20180717")["result"]
         assert data["states"] == ["new", "pending", "approved"]
         assert data["messages"] == [
             "New push request",
@@ -153,13 +131,13 @@ def test_approval(capfd, devpi, getjson, keep_index, makepkg):
     push = links[0]['log'][1]
     del push['when']
     assert upload == {
-        'dst': '%s/+pr-20180717' % devpi.user,
+        'dst': '%s/20180717' % devpi.user,
         'what': 'upload',
         'who': '%s' % devpi.user}
     assert push == {
         'dst': '%s/dev' % devpi.target,
         'message': 'The push request was accepted',
-        'src': '%s/+pr-20180717' % devpi.user,
+        'src': '%s/20180717' % devpi.user,
         'what': 'push',
         'who': '%s' % devpi.target}
 
@@ -186,9 +164,9 @@ def test_add_on_create(capfd, devpi, getjson, makepkg):
     assert lines[0] == "new push requests"
     assert lines[1].startswith(
         "%s/20190128 -> %s/dev" % (devpi.user, devpi.target))
-    data = getjson("/%s/+pr-20190128" % devpi.user)["result"]
+    data = getjson("/%s/20190128" % devpi.user)["result"]
     assert data["projects"] == ["hello"]
-    data = getjson("/%s/+pr-20190128/hello" % devpi.user)["result"]
+    data = getjson("/%s/20190128/hello" % devpi.user)["result"]
     assert list(data.keys()) == ["1.0"]
     (link,) = data["1.0"]["+links"]
     assert "hello-1.0.tar.gz" in link["href"]
@@ -229,7 +207,7 @@ def test_reject(capfd, devpi, getjson, makepkg):
     assert lines[0] == "rejected push requests"
     assert lines[1].startswith(
         "%s/20190128 -> %s/dev" % (devpi.user, devpi.target))
-    data = getjson("+pr-20190128")["result"]
+    data = getjson("20190128")["result"]
     assert data["states"] == ["new", "pending", "rejected"]
     assert data["messages"] == [
         "New push request",
@@ -246,7 +224,7 @@ def test_reject(capfd, devpi, getjson, makepkg):
         "20190128",
         "-m", "Please accept these fixed packages",
         code=200)
-    data = getjson("+pr-20190128")["result"]
+    data = getjson("20190128")["result"]
     assert data["states"] == ["new", "pending", "rejected", "pending"]
     assert data["messages"] == [
         "New push request",
@@ -289,7 +267,7 @@ def test_cancel(capfd, devpi, getjson, makepkg):
     assert lines[0] == "new push requests"
     assert lines[1].startswith(
         "%s/20190128 -> %s/dev" % (devpi.user, devpi.target))
-    data = getjson("+pr-20190128")["result"]
+    data = getjson("20190128")["result"]
     assert data["states"] == ["new", "pending", "new"]
     assert data["messages"] == [
         "New push request",
@@ -343,7 +321,7 @@ def test_pr_listing(capfd, devpi, getjson, makepkg):
     pkg = makepkg("hello-1.0.tar.gz", b"content1", "hello", "1.0")
     devpi(
         "upload",
-        "--index", "+pr-20180717",
+        "--index", "20180717",
         pkg.strpath)
     devpi(
         "submit-pr",

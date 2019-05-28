@@ -57,7 +57,7 @@ To create a new *push request* with packages from the currently selected index t
 
     $ devpi new-pr 20180322 prod/main pkg-app==1.0 app-dependency==1.2
 
-This creates a new *merge index* named ``+pr-20180322`` and adds the two packages from the current index to it.
+This creates a new *merge index* named ``20180322`` and adds the two packages from the current index to it.
 
 It's possible to upload and push further packages at this point.
 
@@ -82,11 +82,11 @@ This works without ``devpi-pr`` installed alongside ``devpi-client``,
 but is more complex.
 
 First a new *merge index* needs to be created.
-The index name must start with ``+pr-``, be of type ``merge`` and the target index specified in ``bases``:
+The index name must be of type ``merge`` and the target index specified in ``bases``:
 
 .. code-block:: bash
 
-    $ devpi index -c +pr-20180322 type=merge bases=prod/main
+    $ devpi index -c 20180322 type=merge bases=prod/main
 
 Once the index is created, packages can be uploaded to it with ``devpi upload`` or pushed from another index with ``devpi push``.
 
@@ -94,7 +94,7 @@ At last the ``state`` of the index needs to be changed to ``pending`` and a stat
 
 .. code-block:: bash
 
-    $ devpi index +pr-20180322 state=pending messages+="Please approve these updated packages"
+    $ devpi index 20180322 state=pending messages+="Please approve these updated packages"
 
 
 Managing push requests
@@ -116,14 +116,14 @@ use the ``list-prs`` command with the name of the target index:
 .. code-block:: bash
 
     $ devpi list-prs prod/main
-    user/+pr-20180322 10
+    user/20180322 10
 
 With info about release files:
 
 .. code-block:: bash
 
     $ devpi list-prs -v prod/main
-    user/+pr-20180322 10
+    user/20180322 10
         app-dependency 1.2
             app-dependency-1.2.tgz sha256=924ad82c...
         pkg-app 1.0
@@ -134,7 +134,7 @@ With tox (test) result infos:
 .. code-block:: bash
 
     $ devpi list-prs -vt prod/main
-    user/+pr-20180322 10 (differing tox results)
+    user/20180322 10 (differing tox results)
         app-dependency 1.2 (all tests passed)
             app-dependency-1.2.tgz sha256=924ad82c...
         pkg-app 1.0 (no tox results)
@@ -146,8 +146,8 @@ To approve or reject a *push request* use ``approve-pr`` and ``reject-pr``:
 
 .. code-block:: bash
 
-    $ devpi approve-pr user/+pr-20180322 10
-    The push request user/+pr-20180322 was approved and the following packages from it pushed into prod/main:
+    $ devpi approve-pr user/20180322 10
+    The push request user/20180322 was approved and the following packages from it pushed into prod/main:
     app-dependency 1.2
         app-dependency-1.2.tgz sha256=924ad82c...
     pkg-app 1.0
@@ -158,5 +158,5 @@ An example where the *push request* has changed:
 
 .. code-block:: bash
 
-    $ devpi reject-pr user/+pr-20180322 10 -m "The test results for pkg-app are missing"
+    $ devpi reject-pr user/20180322 10 -m "The test results for pkg-app are missing"
     The push request has changed since serial 10. Please inspect it again.

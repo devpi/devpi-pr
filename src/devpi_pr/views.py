@@ -30,7 +30,7 @@ def pr_list(context, request):
             (base,) = ixconfig['bases']
             state_info = result.setdefault(ixconfig["states"][-1], {})
             state_info.setdefault(user.name, []).append(dict(
-                name=name[4:],
+                name=name,
                 base=base,
                 last_serial=last_serial))
     apireturn(200, type="pr-list", result=result)

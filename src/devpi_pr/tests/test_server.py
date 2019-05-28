@@ -42,7 +42,7 @@ def targetindex(mapp, testapp):
 def new_mergeindex(mapp, targetindex):
     mapp.create_and_login_user("mergeuser")
     api = mapp.create_index(
-        "+pr-index",
+        "index",
         indexconfig=dict(
             type="merge",
             states="new",
@@ -166,13 +166,13 @@ def test_approve_pending(mapp, mergeindex, targetindex, testapp):
     push = links[0]['log'][1]
     del push['when']
     assert upload == {
-        'dst': 'mergeuser/+pr-index',
+        'dst': 'mergeuser/index',
         'what': 'upload',
         'who': 'mergeuser'}
     assert push == {
         'dst': 'targetuser/targetindex',
         'message': 'Approve',
-        'src': 'mergeuser/+pr-index',
+        'src': 'mergeuser/index',
         'what': 'push',
         'who': 'targetuser'}
     releases = mapp.getreleaseslist('pkg', indexname=targetindex.stagename)
@@ -272,7 +272,7 @@ def test_approve_nonvolatile_conflict(mapp, mergeindex, targetindex, testapp):
     # create another merge index with conflicting pkg
     mapp.login(mergeindex.stagename.split('/')[0], "123")
     othermergeindex = mapp.create_index(
-        "+pr-other",
+        "other",
         indexconfig=dict(
             type="merge",
             states="new",
