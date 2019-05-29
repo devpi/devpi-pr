@@ -30,7 +30,8 @@ setup(
             "devpi-pr = devpi_pr.client"],
         'devpi_server': [
             "devpi-pr = devpi_pr.server"]},
-    install_requires=[],
+    install_requires=[
+        "attrs"],
     extras_require={
         'dev': [
             'pytest',

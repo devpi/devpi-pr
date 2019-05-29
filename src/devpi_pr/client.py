@@ -2,6 +2,7 @@ from devpi_common.metadata import parse_requirement
 from pluggy import HookimplMarker
 from tempfile import NamedTemporaryFile
 from subprocess import call
+import attr
 import os
 import textwrap
 import traceback
@@ -56,6 +57,12 @@ def full_indexname(hub, prname):
     return "%s/%s" % (user, prname)
 
 
+@attr.s
+class MergeIndexInfos:
+    indexname = attr.ib(type=str)
+    url = attr.ib(type=str)
+
+
 def require_merge_index(hub, name):
     hub.requires_login()
     current = hub.require_valid_current_with_index()
@@ -67,7 +74,7 @@ def require_merge_index(hub, name):
             name, result.reason))
     if result.result['type'] != 'merge':
         hub.fatal("The index '%s' is not a merge index" % name)
-    return (indexname, url)
+    return MergeIndexInfos(indexname, url)
 
 
 def new_pr_arguments(parser):
@@ -132,16 +139,16 @@ def approve_pr_arguments(parser):
 
 def approve_pr(hub, args):
     (name,) = args.name
-    (indexname, url) = require_merge_index(hub, name)
+    indexinfos = require_merge_index(hub, name)
     (serial,) = args.serial
     message = get_message(hub, args.message)
     hub.http_api(
-        "patch", url, [
+        "patch", indexinfos.url, [
             "states+=approved",
             "messages+=%s" % message],
         headers={'X-Devpi-PR-Serial': serial})
     if not args.keep_index:
-        hub.http_api("delete", url)
+        hub.http_api("delete", indexinfos.url)
 
 
 def list_prs_arguments(parser):
@@ -197,9 +204,9 @@ def reject_pr_arguments(parser):
 
 def reject_pr(hub, args):
     (name,) = args.name
-    (indexname, url) = require_merge_index(hub, name)
+    indexinfos = require_merge_index(hub, name)
     message = get_message(hub, args.message)
-    hub.http_api("patch", url, [
+    hub.http_api("patch", indexinfos.url, [
         "states+=rejected",
         "messages+=%s" % message])
 
@@ -217,9 +224,9 @@ def submit_pr_arguments(parser):
 
 def submit_pr(hub, args):
     (name,) = args.name
-    (indexname, url) = require_merge_index(hub, name)
+    indexinfos = require_merge_index(hub, name)
     message = get_message(hub, args.message)
-    hub.http_api("patch", url, [
+    hub.http_api("patch", indexinfos.url, [
         "states+=pending",
         "messages+=%s" % message])
 
@@ -237,9 +244,9 @@ def cancel_pr_arguments(parser):
 
 def cancel_pr(hub, args):
     (name,) = args.name
-    (indexname, url) = require_merge_index(hub, name)
+    indexinfos = require_merge_index(hub, name)
     message = get_message(hub, args.message)
-    hub.http_api("patch", url, [
+    hub.http_api("patch", indexinfos.url, [
         "states+=new",
         "messages+=%s" % message])
 
@@ -254,8 +261,8 @@ def delete_pr_arguments(parser):
 
 def delete_pr(hub, args):
     (name,) = args.name
-    (indexname, url) = require_merge_index(hub, name)
-    hub.http_api("delete", url)
+    indexinfos = require_merge_index(hub, name)
+    hub.http_api("delete", indexinfos.url)
 
 
 @client_hookimpl
