@@ -31,6 +31,7 @@ setup(
         'devpi_server': [
             "devpi-pr = devpi_pr.server"]},
     install_requires=[
+        "appdirs",
         "attrs"],
     extras_require={
         'dev': [
@@ -41,7 +42,7 @@ setup(
         'client': [
             'devpi-client>=4.3.0'],
         'server': [
-            'devpi-server>=4.8.2.dev0']},
+            'devpi-server>=5.0.0.dev0']},
     include_package_data=True,
     zip_safe=False,
     python_requires=">=3.4",

@@ -1,14 +1,18 @@
+from contextlib import contextmanager
 from devpi_common.metadata import parse_requirement
 from pluggy import HookimplMarker
 from tempfile import NamedTemporaryFile
 from subprocess import call
+import appdirs
 import attr
+import json
 import os
 import textwrap
 import traceback
 
 
 client_hookimpl = HookimplMarker("devpiclient")
+devpi_pr_data_dir = appdirs.user_data_dir("devpi-pr", "devpi")
 
 
 def get_message_from_file(f):
@@ -46,6 +50,35 @@ def get_message(hub, msg):
     hub.fatal("A message is required.")
 
 
+@contextmanager
+def devpi_pr_review_lock():
+    lock_fn = os.path.join(devpi_pr_data_dir, "reviews.lock")
+    with open(lock_fn, "x"):
+        yield
+    os.remove(lock_fn)
+
+
+@contextmanager
+def devpi_pr_review_data():
+    with devpi_pr_review_lock():
+        fn = os.path.join(devpi_pr_data_dir, "reviews.json")
+        if os.path.exists(fn):
+            with open(fn, "rb") as f:
+                data = f.read().decode("utf-8")
+        else:
+            data = ""
+        if not data:
+            original = None
+            info = {}
+        else:
+            original = json.loads(data)
+            info = dict(original)
+        yield info
+        if info != original:
+            with open(fn, "wb") as f:
+                f.write(json.dumps(info).encode("utf-8"))
+
+
 def full_indexname(hub, prname):
     if '/' in prname:
         try:
@@ -59,22 +92,27 @@ def full_indexname(hub, prname):
 
 @attr.s
 class MergeIndexInfos:
+    user = attr.ib(type=str)
+    index = attr.ib(type=str)
     indexname = attr.ib(type=str)
     url = attr.ib(type=str)
+    ixconfig = attr.ib(type=dict)
 
 
 def require_merge_index(hub, name):
     hub.requires_login()
     current = hub.require_valid_current_with_index()
     indexname = full_indexname(hub, name)
+    (user, index) = indexname.split('/')
     url = current.get_index_url(indexname, slash=False)
     result = hub.http_api("get", url, fatal=False)
     if result.reason != 'OK':
         hub.fatal("Couldn't access merge index '%s': %s" % (
             name, result.reason))
-    if result.result['type'] != 'merge':
+    ixconfig = result.result
+    if ixconfig['type'] != 'merge':
         hub.fatal("The index '%s' is not a merge index" % name)
-    return MergeIndexInfos(indexname, url)
+    return MergeIndexInfos(user, index, indexname, url, ixconfig)
 
 
 def new_pr_arguments(parser):
@@ -120,6 +158,25 @@ def new_pr(hub, args):
             fatal=True)
 
 
+def abort_pr_review_arguments(parser):
+    """ abort review of push request
+    """
+    parser.add_argument(
+        "name", type=str, action="store", nargs=1,
+        help="push request name")
+
+
+def abort_pr_review(hub, args):
+    (name,) = args.name
+    indexinfos = require_merge_index(hub, name)
+    with devpi_pr_review_data() as review_data:
+        if indexinfos.indexname in review_data:
+            hub.info("Aborted review of '%s'" % indexinfos.indexname)
+            del review_data[indexinfos.indexname]
+        else:
+            hub.error("No review of '%s' active" % indexinfos.indexname)
+
+
 def approve_pr_arguments(parser):
     """ approve push request
     """
@@ -127,8 +184,8 @@ def approve_pr_arguments(parser):
         "name", type=str, action="store", nargs=1,
         help="push request name")
     parser.add_argument(
-        "serial", type=str, action="store", nargs=1,
-        help="push request serial")
+        "-s", "--serial", type=str, action="store",
+        help="push request serial, only required if not using 'review-pr' first")
     parser.add_argument(
         "-m", "--message", action="store",
         help="Message to add on submit.")
@@ -140,7 +197,15 @@ def approve_pr_arguments(parser):
 def approve_pr(hub, args):
     (name,) = args.name
     indexinfos = require_merge_index(hub, name)
-    (serial,) = args.serial
+    serial = args.serial
+    if serial is None:
+        with devpi_pr_review_data() as review_data:
+            if indexinfos.indexname not in review_data:
+                hub.fatal(
+                    "No review data found for '%s', "
+                    "it looks like you did not use review-pr or "
+                    "you forgot the --serial option." % indexinfos.indexname)
+            serial = "%s" % review_data[indexinfos.indexname]
     message = get_message(hub, args.message)
     hub.http_api(
         "patch", indexinfos.url, [
@@ -149,6 +214,8 @@ def approve_pr(hub, args):
         headers={'X-Devpi-PR-Serial': serial})
     if not args.keep_index:
         hub.http_api("delete", indexinfos.url)
+    with devpi_pr_review_data() as review_data:
+        review_data.pop(indexinfos.indexname, None)
 
 
 def list_prs_arguments(parser):
@@ -169,15 +236,19 @@ def get_name_serials(users_prs):
     return sorted(result)
 
 
-def create_pr_list_output(users_prs):
+def create_pr_list_output(users_prs, review_data):
     out = []
     name_serials = get_name_serials(users_prs)
     longest_name = max(len(x[0]) for x in name_serials)
     longest_base = max(len(x[1]) for x in name_serials)
     longest_serial = max(len("%d" % x[2]) for x in name_serials)
-    fmt = "{0:<%d} -> {1:<%d} {2:>%d}" % (longest_name, longest_base, longest_serial + 3)
+    fmt = "{0:<%d} -> {1:<%d} {2:>%d}{3}" % (longest_name, longest_base, longest_serial + 3)
     for name, base, serial in get_name_serials(users_prs):
-        out.append(fmt.format(name, base, serial))
+        if name in review_data:
+            active = " (reviewing)"
+        else:
+            active = ""
+        out.append(fmt.format(name, base, serial, active))
     return out
 
 
@@ -186,7 +257,8 @@ def list_prs(hub, args):
     url = hub.current.get_index_url(indexname).asdir().joinpath("+pr-list")
     r = hub.http_api("get", url, type="pr-list")
     for state in sorted(r.result):
-        out = create_pr_list_output(r.result[state])
+        with devpi_pr_review_data() as review_data:
+            out = create_pr_list_output(r.result[state], review_data)
         print("%s push requests" % state)
         print("\n".join("    %s" % x for x in out))
 
@@ -209,6 +281,49 @@ def reject_pr(hub, args):
     hub.http_api("patch", indexinfos.url, [
         "states+=rejected",
         "messages+=%s" % message])
+
+
+def review_pr_arguments(parser):
+    """ start reviewing push request
+    """
+    parser.add_argument(
+        "name", type=str, action="store", nargs=1,
+        help="push request name")
+    parser.add_argument(
+        "-u", "--update", action="store_true",
+        help="Update the serial of the review.")
+
+
+def review_pr(hub, args):
+    (name,) = args.name
+    indexinfos = require_merge_index(hub, name)
+    (targetindex,) = indexinfos.ixconfig['bases']
+    targeturl = hub.current.get_index_url(targetindex)
+    r = hub.http_api("get", targeturl.asdir().joinpath("+pr-list"), type="pr-list")
+    pending_prs = r.result.get("pending")
+    if not pending_prs:
+        hub.fatal("There are no pending PRs.")
+    users_prs = pending_prs.get(indexinfos.user)
+    for prs in users_prs:
+        if prs["name"] == indexinfos.index:
+            last_serial = prs["last_serial"]
+            break
+    else:
+        hub.fatal("Could not find PR '%s'." % indexinfos.indexname)
+    with devpi_pr_review_data() as review_data:
+        if indexinfos.indexname in review_data:
+            if args.update:
+                hub.info("Updated review of '%s' to serial %s" % (
+                    indexinfos.indexname, review_data[indexinfos.indexname]))
+            else:
+                hub.warn("Already reviewing '%s' at serial %s" % (
+                    indexinfos.indexname, review_data[indexinfos.indexname]))
+                return
+        else:
+            hub.info(
+                "Started review of '%s' at serial %s" % (
+                    indexinfos.indexname, last_serial))
+        review_data[indexinfos.indexname] = last_serial
 
 
 def submit_pr_arguments(parser):
@@ -269,9 +384,11 @@ def delete_pr(hub, args):
 def devpiclient_subcommands():
     return [
         (new_pr_arguments, "new-pr", "devpi_pr.client:new_pr"),
+        (abort_pr_review_arguments, "abort-pr-review", "devpi_pr.client:abort_pr_review"),
         (approve_pr_arguments, "approve-pr", "devpi_pr.client:approve_pr"),
         (list_prs_arguments, "list-prs", "devpi_pr.client:list_prs"),
         (reject_pr_arguments, "reject-pr", "devpi_pr.client:reject_pr"),
+        (review_pr_arguments, "review-pr", "devpi_pr.client:review_pr"),
         (submit_pr_arguments, "submit-pr", "devpi_pr.client:submit_pr"),
         (cancel_pr_arguments, "cancel-pr", "devpi_pr.client:cancel_pr"),
         (delete_pr_arguments, "delete-pr", "devpi_pr.client:delete_pr")]
