@@ -225,6 +225,9 @@ def list_prs_arguments(parser):
         "indexname", type=str, action="store", nargs="?",
         help="index name, specified as NAME or USER/NAME.  If no index "
              "is specified use the current index")
+    parser.add_argument(
+        "-a", "--all-states", action="store_true",
+        help="Output normally hidden states.")
 
 
 def merge_pr_data(data1, data2):
@@ -279,17 +282,29 @@ def list_prs(hub, args):
     index_url = current.get_index_url(indexname, slash=False)
     r = hub.http_api("get", index_url, fatal=False, type="indexconfig")
     ixconfig = r.result or {}
-    if ixconfig.get("push_requests_allowed", False):
+    hidden_states = set()
+    if not args.all_states:
+        hidden_states.add("approved")
+    push_requests_allowed = ixconfig.get("push_requests_allowed", False)
+    is_merge_index = ixconfig["type"] == "merge"
+    if push_requests_allowed or is_merge_index:
         list_url = index_url.asdir().joinpath("+pr-list")
         r = hub.http_api("get", list_url, type="pr-list")
-        pr_data = r.result
+        index_data = r.result
     else:
-        pr_data = {}
+        index_data = {}
+    if not is_merge_index and not args.all_states:
+        hidden_states.add("new")
     user_url = current.get_user_url(indexname)
     list_url = user_url.asdir().joinpath("+pr-list")
     r = hub.http_api("get", list_url, type="pr-list")
-    pr_data = merge_pr_data(pr_data, r.result)
+    user_data = r.result
+    if is_merge_index and not args.all_states:
+        user_data.pop("new", None)
+    pr_data = merge_pr_data(index_data, user_data)
     for state in sorted(pr_data):
+        if state in hidden_states:
+            continue
         with devpi_pr_review_data() as review_data:
             out = create_pr_list_output(pr_data[state], review_data)
         print("%s push requests" % state)

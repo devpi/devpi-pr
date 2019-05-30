@@ -338,6 +338,7 @@ def test_add_on_create(capfd, devpi, getjson, makepkg):
     capfd.readouterr()
     devpi(
         "list-prs",
+        "%s/20190128" % devpi.user,
         code=200)
     (out, err) = capfd.readouterr()
     lines = list(x.strip() for x in out.splitlines()[-2:])
@@ -440,7 +441,7 @@ def test_cancel(capfd, devpi, getjson, makepkg):
     # clear output
     capfd.readouterr()
     devpi(
-        "list-prs",
+        "list-prs", "-a",
         code=200)
     (out, err) = capfd.readouterr()
     lines = list(x.strip() for x in out.splitlines()[-2:])
@@ -466,7 +467,7 @@ def test_delete(capfd, devpi):
     # clear output
     capfd.readouterr()
     devpi(
-        "list-prs",
+        "list-prs", "--all-states",
         code=200)
     (out, err) = capfd.readouterr()
     lines = list(x.strip() for x in out.splitlines()[-2:])

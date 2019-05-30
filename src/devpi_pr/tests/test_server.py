@@ -302,6 +302,12 @@ def test_pr_list(mapp, new_mergeindex, targetindex, testapp):
         'name': 'index',
         'base': 'targetuser/targetindex',
         'last_serial': 5}]}}
+    r = testapp.get_json(new_mergeindex.index + "/+pr-list")
+    result = r.json['result']
+    assert result == {'new': {'mergeuser': [{
+        'name': 'index',
+        'base': 'targetuser/targetindex',
+        'last_serial': 5}]}}
     r = testapp.get_json("/mergeuser/+pr-list")
     result = r.json['result']
     assert result == {'new': {'mergeuser': [{

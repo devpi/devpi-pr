@@ -4,6 +4,15 @@ from pyramid.view import view_config
 
 @view_config(route_name="index-pr-list", request_method="GET")
 def index_pr_list(context, request):
+    if context.stage.ixconfig["type"] == "merge":
+        ixconfig = context.stage.ixconfig
+        last_serial = context.stage.get_last_change_serial()
+        apireturn(200, type="pr-list", result={
+            ixconfig["states"][-1]: {
+                context.username: [dict(
+                    name=context.index,
+                    base=ixconfig["bases"][0],
+                    last_serial=last_serial)]}})
     result = {}
     if not context.stage.ixconfig.get("push_requests_allowed", False):
         apireturn(200, type="pr-list", result=result)
