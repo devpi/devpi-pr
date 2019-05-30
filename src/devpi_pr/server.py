@@ -118,7 +118,7 @@ class MergeStage(object):
             except TypeError:
                 request.apifatal(
                     400, message="missing X-Devpi-PR-Serial request header")
-            merge_serial = get_last_serial_for_merge_index(self.stage)
+            merge_serial = get_last_serial_for_merge_index(self.stage, oldconfig)
             if pr_serial != merge_serial:
                 request.apifatal(
                     400, message="got X-Devpi-PR-Serial %s, expected %s" % (

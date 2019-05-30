@@ -340,6 +340,7 @@ def test_pr_list_serial(mapp, new_mergeindex, targetindex, testapp):
         'messages+=Please approve'])
     r = testapp.get_json(targetindex.index + "/+pr-list")
     result = r.json['result']
+    # serial 8 is submit
     assert result == {'pending': {'mergeuser': [{
         'name': 'index',
         'base': 'targetuser/targetindex',
@@ -350,10 +351,59 @@ def test_pr_list_serial(mapp, new_mergeindex, targetindex, testapp):
         set_whitelist=False)
     r = testapp.get_json(targetindex.index + "/+pr-list")
     result = r.json['result']
+    # serial 9 is second upload
     assert result == {'pending': {'mergeuser': [{
         'name': 'index',
         'base': 'targetuser/targetindex',
         'last_serial': 9}]}}
+    mapp.create_index(
+        "other",
+        indexconfig=dict(
+            type="merge",
+            states="new",
+            messages="Different push request",
+            bases=[targetindex.stagename]))
+    r = testapp.get_json(targetindex.index + "/+pr-list")
+    result = r.json['result']
+    # serial 10 is the new merge index, the old index should still be at 9
+    assert result == {
+        'pending': {'mergeuser': [{
+            'name': 'index',
+            'base': 'targetuser/targetindex',
+            'last_serial': 9}]},
+        'new': {'mergeuser': [{
+            'name': 'other',
+            'base': 'targetuser/targetindex',
+            'last_serial': 10}]}}
+    # we register another project
+    mapp.use("mergeuser/index")
+    mapp.set_versiondata(dict(name="hello", version="1.0"), set_whitelist=False)
+    r = testapp.get_json(targetindex.index + "/+pr-list")
+    result = r.json['result']
+    # that should be serial 11
+    assert result == {
+        'pending': {'mergeuser': [{
+            'name': 'index',
+            'base': 'targetuser/targetindex',
+            'last_serial': 11}]},
+        'new': {'mergeuser': [{
+            'name': 'other',
+            'base': 'targetuser/targetindex',
+            'last_serial': 10}]}}
+    # now we delete a project
+    mapp.delete_project("pkg")
+    r = testapp.get_json(targetindex.index + "/+pr-list")
+    result = r.json['result']
+    # the deletion should be 12
+    assert result == {
+        'pending': {'mergeuser': [{
+            'name': 'index',
+            'base': 'targetuser/targetindex',
+            'last_serial': 12}]},
+        'new': {'mergeuser': [{
+            'name': 'other',
+            'base': 'targetuser/targetindex',
+            'last_serial': 10}]}}
 
 
 def test_pr_list_submitted(mapp, new_mergeindex, targetindex, testapp):
