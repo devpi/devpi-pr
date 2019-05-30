@@ -1,4 +1,3 @@
-from .utils import get_last_serial_for_merge_index
 from devpi_server.log import threadlog as log
 from devpi_server.views import apireturn
 from pyramid.view import view_config
@@ -26,7 +25,7 @@ def pr_list(context, request):
             if add_index is False:
                 continue
             stage = user.getstage(name)
-            last_serial = get_last_serial_for_merge_index(stage)
+            last_serial = stage.get_last_change_serial()
             (base,) = ixconfig['bases']
             state_info = result.setdefault(ixconfig["states"][-1], {})
             state_info.setdefault(user.name, []).append(dict(
