@@ -302,6 +302,12 @@ def test_pr_list(mapp, new_mergeindex, targetindex, testapp):
         'name': 'index',
         'base': 'targetuser/targetindex',
         'last_serial': 5}]}}
+    r = testapp.get_json("/mergeuser/+pr-list")
+    result = r.json['result']
+    assert result == {'new': {'mergeuser': [{
+        'name': 'index',
+        'base': 'targetuser/targetindex',
+        'last_serial': 5}]}}
     content1 = mapp.makepkg("pkg-1.0.tar.gz", b"content1", "pkg", "1.0")
     mapp.upload_file_pypi(
         "pkg-1.0.tar.gz", content1, "pkg", "1.0",
@@ -310,6 +316,12 @@ def test_pr_list(mapp, new_mergeindex, targetindex, testapp):
         'states+=pending',
         'messages+=Please approve'])
     r = testapp.get_json(targetindex.index + "/+pr-list")
+    result = r.json['result']
+    assert result == {'pending': {'mergeuser': [{
+        'name': 'index',
+        'base': 'targetuser/targetindex',
+        'last_serial': 8}]}}
+    r = testapp.get_json("/mergeuser/+pr-list")
     result = r.json['result']
     assert result == {'pending': {'mergeuser': [{
         'name': 'index',
@@ -414,7 +426,13 @@ def test_pr_list_submitted(mapp, new_mergeindex, targetindex, testapp):
     r = testapp.patch_json(new_mergeindex.index, [
         'states+=pending',
         'messages+=Please approve'])
-    r = testapp.get_json(new_mergeindex.index + "/+pr-list")
+    r = testapp.get_json(targetindex.index + "/+pr-list")
+    result = r.json['result']
+    assert result == {'pending': {'mergeuser': [{
+        'name': 'index',
+        'base': 'targetuser/targetindex',
+        'last_serial': 8}]}}
+    r = testapp.get_json("/mergeuser/+pr-list")
     result = r.json['result']
     assert result == {'pending': {'mergeuser': [{
         'name': 'index',

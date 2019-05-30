@@ -174,7 +174,8 @@ def devpiserver_indexconfig_defaults(index_type):
 
 
 def includeme(config):
-    config.add_route("pr-list", "/{user}/{index}/+pr-list")
+    config.add_route("index-pr-list", "/{user}/{index}/+pr-list")
+    config.add_route("user-pr-list", "/{user}/+pr-list")
     config.scan('devpi_pr.views')
 
 

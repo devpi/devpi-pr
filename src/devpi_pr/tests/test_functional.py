@@ -482,7 +482,7 @@ def test_delete(capfd, devpi):
         "list-prs",
         code=200)
     (out, err) = capfd.readouterr()
-    assert len(out.splitlines()) == 1
+    assert "20190128" not in out
 
 
 def test_pr_listing(capfd, devpi, getjson, makepkg):

@@ -227,6 +227,27 @@ def list_prs_arguments(parser):
              "is specified use the current index")
 
 
+def merge_pr_data(data1, data2):
+    states = set(data1).union(data2)
+    result = {}
+    for state in states:
+        state_data = result[state] = {}
+        state_data1 = data1.get(state, {})
+        state_data2 = data2.get(state, {})
+        users = set(state_data1).union(state_data2)
+        for user in users:
+            user_data1 = set(
+                tuple(x.items())
+                for x in state_data1.get(user, []))
+            user_data2 = set(
+                tuple(x.items())
+                for x in state_data2.get(user, []))
+            state_data[user] = list(
+                dict(x)
+                for x in user_data1.union(user_data2))
+    return result
+
+
 def get_name_serials(users_prs):
     result = []
     for user, prs in users_prs.items():
@@ -254,11 +275,23 @@ def create_pr_list_output(users_prs, review_data):
 
 def list_prs(hub, args):
     indexname = args.indexname
-    url = hub.current.get_index_url(indexname).asdir().joinpath("+pr-list")
-    r = hub.http_api("get", url, type="pr-list")
-    for state in sorted(r.result):
+    current = hub.require_valid_current_with_index()
+    index_url = current.get_index_url(indexname, slash=False)
+    r = hub.http_api("get", index_url, fatal=False, type="indexconfig")
+    ixconfig = r.result or {}
+    if ixconfig.get("push_requests_allowed", False):
+        list_url = index_url.asdir().joinpath("+pr-list")
+        r = hub.http_api("get", list_url, type="pr-list")
+        pr_data = r.result
+    else:
+        pr_data = {}
+    user_url = current.get_user_url(indexname)
+    list_url = user_url.asdir().joinpath("+pr-list")
+    r = hub.http_api("get", list_url, type="pr-list")
+    pr_data = merge_pr_data(pr_data, r.result)
+    for state in sorted(pr_data):
         with devpi_pr_review_data() as review_data:
-            out = create_pr_list_output(r.result[state], review_data)
+            out = create_pr_list_output(pr_data[state], review_data)
         print("%s push requests" % state)
         print("\n".join("    %s" % x for x in out))
 
