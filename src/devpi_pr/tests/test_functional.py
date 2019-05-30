@@ -536,6 +536,38 @@ def test_pr_listing(capfd, devpi, getjson, makepkg):
         "list-prs",
         code=200)
     (out, err) = capfd.readouterr()
+    assert "new push requests" not in out
+    assert "%s/20181217" % devpi.user not in out
+    assert "pending push requests" in out
+    assert "%s/20180717" % devpi.user in out
+    assert "%s/20190529" % devpi.user in out
+    assert "(reviewing)" in out
+    # get the listing with all states
+    devpi(
+        "list-prs", "-a",
+        code=200)
+    (out, err) = capfd.readouterr()
+    assert "new push requests" in out
+    assert "%s/20181217" % devpi.user in out
+    assert "pending push requests" in out
+    assert "%s/20180717" % devpi.user in out
+    assert "%s/20190529" % devpi.user in out
+    assert "(reviewing)" in out
+    # get the listing with all states and messages
+    devpi(
+        "list-prs", "-m",
+        code=200)
+    (out, err) = capfd.readouterr()
+    assert "new push requests" not in out
+    assert "%s/20181217" % devpi.user not in out
+    assert "pending push requests" in out
+    assert "%s/20180717" % devpi.user in out
+    assert "%s/20190529" % devpi.user in out
+    assert "(reviewing)" in out
+    assert "new by %s:" % devpi.user in out
+    assert "pending by %s:" % devpi.user in out
+    assert "Please accept these updated packages" in out
+    assert "Please review" in out
 
 
 def test_index_not_found(capfd, devpi):

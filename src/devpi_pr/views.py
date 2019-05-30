@@ -12,7 +12,10 @@ def index_pr_list(context, request):
                 context.username: [dict(
                     name=context.index,
                     base=ixconfig["bases"][0],
-                    last_serial=last_serial)]}})
+                    last_serial=last_serial,
+                    states=ixconfig["states"],
+                    messages=ixconfig["messages"],
+                    by=ixconfig["changers"])]}})
     result = {}
     if not context.stage.ixconfig.get("push_requests_allowed", False):
         apireturn(200, type="pr-list", result=result)
@@ -29,7 +32,10 @@ def index_pr_list(context, request):
             state_info.setdefault(user.name, []).append(dict(
                 name=name,
                 base=targetindex_name,
-                last_serial=last_serial))
+                last_serial=last_serial,
+                states=ixconfig["states"],
+                messages=ixconfig["messages"],
+                by=ixconfig["changers"]))
     apireturn(200, type="pr-list", result=result)
 
 
@@ -47,5 +53,8 @@ def user_pr_list(context, request):
         state_info.setdefault(user.name, []).append(dict(
             name=name,
             base=targetindex_name,
-            last_serial=last_serial))
+            last_serial=last_serial,
+            states=ixconfig["states"],
+            messages=ixconfig["messages"],
+            by=ixconfig["changers"]))
     apireturn(200, type="pr-list", result=result)

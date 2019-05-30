@@ -1,5 +1,6 @@
 from contextlib import contextmanager
 from devpi_common.metadata import parse_requirement
+from operator import itemgetter
 from pluggy import HookimplMarker
 from tempfile import NamedTemporaryFile
 from subprocess import call
@@ -228,6 +229,9 @@ def list_prs_arguments(parser):
     parser.add_argument(
         "-a", "--all-states", action="store_true",
         help="Output normally hidden states.")
+    parser.add_argument(
+        "-m", "--messages", action="store_true",
+        help="Include state change messages in output.")
 
 
 def merge_pr_data(data1, data2):
@@ -240,10 +244,14 @@ def merge_pr_data(data1, data2):
         users = set(state_data1).union(state_data2)
         for user in users:
             user_data1 = set(
-                tuple(x.items())
+                tuple(
+                    (k, tuple(v) if isinstance(v, list) else v)
+                    for k, v in x.items())
                 for x in state_data1.get(user, []))
             user_data2 = set(
-                tuple(x.items())
+                tuple(
+                    (k, tuple(v) if isinstance(v, list) else v)
+                    for k, v in x.items())
                 for x in state_data2.get(user, []))
             state_data[user] = list(
                 dict(x)
@@ -251,29 +259,35 @@ def merge_pr_data(data1, data2):
     return result
 
 
-def get_name_serials(users_prs):
+def get_prs(users_prs):
     result = []
     for user, prs in users_prs.items():
         for pr in prs:
-            name = "%s/%s" % (user, pr['name'])
-            result.append((name, pr['base'], pr['last_serial']))
-    return sorted(result)
+            result.append(dict(pr, name="%s/%s" % (user, pr['name'])))
+    return sorted(result, key=itemgetter("name", "base", "last_serial"))
 
 
-def create_pr_list_output(users_prs, review_data):
+def create_pr_list_output(users_prs, review_data, include_messages):
     out = []
-    name_serials = get_name_serials(users_prs)
-    longest_name = max(len(x[0]) for x in name_serials)
-    longest_base = max(len(x[1]) for x in name_serials)
-    longest_serial = max(len("%d" % x[2]) for x in name_serials)
-    fmt = "{0:<%d} -> {1:<%d} {2:>%d}{3}" % (longest_name, longest_base, longest_serial + 3)
-    for name, base, serial in get_name_serials(users_prs):
-        if name in review_data:
+    prs = get_prs(users_prs)
+    longest_name = max(len(pr["name"]) for pr in prs)
+    longest_base = max(len(pr["base"]) for pr in prs)
+    longest_serial = max(len("%d" % pr["last_serial"]) for pr in prs)
+    fmt = "{0:<%d} -> {1:<%d} at serial {2:>%d}{3}" % (longest_name, longest_base, longest_serial)
+    for pr in prs:
+        if pr["name"] in review_data:
             active = " (reviewing)"
         else:
             active = ""
-        out.append(fmt.format(name, base, serial, active))
-    return out
+        out.append(fmt.format(
+            pr["name"], pr["base"], pr["last_serial"], active))
+        if not include_messages:
+            continue
+        for state, by, message in zip(pr['states'], pr['by'], pr['messages']):
+            out.append("    %s by %s:\n%s" % (
+                state, by, textwrap.indent(message, "        ")))
+        out.append("")
+    return "\n".join(out)
 
 
 def list_prs(hub, args):
@@ -306,9 +320,10 @@ def list_prs(hub, args):
         if state in hidden_states:
             continue
         with devpi_pr_review_data() as review_data:
-            out = create_pr_list_output(pr_data[state], review_data)
+            out = create_pr_list_output(
+                pr_data[state], review_data, args.messages)
         print("%s push requests" % state)
-        print("\n".join("    %s" % x for x in out))
+        print(textwrap.indent(out, "    "))
 
 
 def reject_pr_arguments(parser):

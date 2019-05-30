@@ -24,10 +24,13 @@ class MergeStage(object):
     @classmethod
     def get_possible_indexconfig_keys(cls):
         """ Returns all possible custom index config keys. """
-        return ('states', 'messages')
+        return ('states', 'messages', 'changers')
+
+    def get_default_config_items(self):
+        return [("changers", [self.stage.username])]
 
     def normalize_indexconfig_value(self, key, value):
-        if key in ("messages", "states"):
+        if key in ("messages", "states", "changers"):
             return ensure_list(value)
 
     def validate_config(self, oldconfig, newconfig):
@@ -78,6 +81,12 @@ class MergeStage(object):
                             oldstate, newstate))
             if len(newconfig["bases"]) != 1:
                 errors.append("A merge index must have exactly one base")
+            new_changers_count = len(newconfig["changers"])
+            old_changers_count = len(oldconfig["changers"])
+            if old_changers_count != new_changers_count:
+                errors.append(
+                    "The changers setting is automatically generated, "
+                    "it is not allowed to be changed")
         if errors:
             raise self.InvalidIndexconfig(errors)
 
@@ -158,6 +167,9 @@ class MergeStage(object):
                 raise self.InvalidIndexconfig([
                     "State transition to '%s' "
                     "not authorized" % state])
+        old_state = oldconfig["states"][-1]
+        if old_state != state:
+            ixconfig["changers"].append(request.authenticated_userid)
 
 
 @server_hookimpl
