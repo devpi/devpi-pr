@@ -117,6 +117,10 @@ class MergeStage(object):
 
     def on_modified(self, request, oldconfig):
         ixconfig = self.stage.ixconfig
+        if not oldconfig:
+            # just created
+            ixconfig["changers"] = [request.authenticated_userid]
+            return
         target = self._get_target_stage()
         state = ixconfig["states"][-1]
         if state == "approved":
