@@ -311,21 +311,33 @@ def list_prs(hub, args):
         index_data = {}
     if not is_merge_index and not args.all_states:
         hidden_states.add("new")
-    user_url = current.get_user_url(indexname)
-    list_url = user_url.asdir().joinpath("+pr-list")
-    r = hub.http_api("get", list_url, type="pr-list")
-    user_data = r.result
-    if is_merge_index and not args.all_states:
-        user_data.pop("new", None)
+    user = current.get_auth_user()
+    if user:
+        login_status = "logged in as %s" % user
+    else:
+        login_status = "not logged in"
+    hub.info("current devpi index: %s (%s)" % (current.index, login_status))
+    if user:
+        user_url = current.get_user_url(indexname)
+        list_url = user_url.asdir().joinpath("+pr-list")
+        r = hub.http_api("get", list_url, type="pr-list")
+        user_data = r.result
+        if is_merge_index and not args.all_states:
+            user_data.pop("new", None)
+    else:
+        user_data = {}
     pr_data = merge_pr_data(index_data, user_data)
+    if not pr_data:
+        hub.line("no pull requests")
+        return
     for state in sorted(pr_data):
         if state in hidden_states:
             continue
         with devpi_pr_review_data() as review_data:
             out = create_pr_list_output(
                 pr_data[state], review_data, args.messages)
-        print("%s push requests" % state)
-        print(textwrap.indent(out, "    "))
+        hub.line("%s push requests" % state)
+        hub.line(textwrap.indent(out, "    "))
 
 
 def reject_pr_arguments(parser):
