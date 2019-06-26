@@ -53,6 +53,8 @@ def get_message(hub, msg):
 
 @contextmanager
 def devpi_pr_review_lock():
+    if not os.path.exists(devpi_pr_data_dir):
+        os.mkdir(devpi_pr_data_dir)
     lock_fn = os.path.join(devpi_pr_data_dir, "reviews.lock")
     with open(lock_fn, "x"):
         yield
