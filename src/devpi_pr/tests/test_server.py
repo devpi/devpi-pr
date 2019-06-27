@@ -180,6 +180,65 @@ def test_approve_pending(mapp, mergeindex, targetindex, testapp):
         'http://localhost/targetuser/targetindex/+f/d0b/425e00e15a0d3/pkg-1.0.tar.gz']
 
 
+def test_approve_with_toxresult_and_docs(mapp, mergeindex, targetindex, testapp):
+    # the mergeindex has one project
+    r = testapp.get_json(mergeindex.index)
+    assert r.json['result']['projects'] == ['pkg']
+    # upload toxresult
+    (release_path,) = mapp.get_release_paths('pkg')
+    mapp.upload_toxresult(release_path, b"{}")
+    # upload doc
+    mapp.upload_doc("pkg.doc.zip", b"foo", "pkg", "")
+    # the targetindex has no project yet
+    r = testapp.get_json(targetindex.index)
+    assert r.json['result']['projects'] == []
+    # we approve the merge index
+    mapp.login(targetindex.stagename.split('/')[0], "123")
+    headers = {'X-Devpi-PR-Serial': '10'}
+    r = testapp.patch_json(mergeindex.index, [
+        'states+=approved',
+        'messages+=Approve'], headers=headers)
+    result = r.json['result']
+    assert result['type'] == 'merge'
+    assert result['acl_upload'] == ['mergeuser']
+    assert result['bases'] == [targetindex.stagename]
+    assert result['messages'] == ['New push request', 'Please approve', 'Approve']
+    assert result['states'] == ['new', 'pending', 'approved']
+    # now the targetindex should have the project
+    r = testapp.get_json(targetindex.index)
+    assert r.json['result']['projects'] == ['pkg']
+    r = testapp.get_json(targetindex.index + '/pkg')
+    result = r.json['result']
+    assert list(result.keys()) == ['1.0']
+    assert result['1.0']['name'] == 'pkg'
+    assert result['1.0']['version'] == '1.0'
+    links = result['1.0']['+links']
+    (release_link,) = [x for x in links if x['rel'] == 'releasefile']
+    (toxresult_link,) = [x for x in links if x['rel'] == 'toxresult']
+    assert release_link['href'] == toxresult_link['for_href']
+    for link in links:
+        assert len(link['log']) == 2
+        upload = link['log'][0]
+        del upload['when']
+        push = link['log'][1]
+        del push['when']
+        assert upload == {
+            'dst': 'mergeuser/index',
+            'what': 'upload',
+            'who': 'mergeuser'}
+        assert push == {
+            'dst': 'targetuser/targetindex',
+            'message': 'Approve',
+            'src': 'mergeuser/index',
+            'what': 'push',
+            'who': 'targetuser'}
+    releases = mapp.getreleaseslist('pkg', indexname=targetindex.stagename)
+    assert sorted(releases) == [
+        'http://localhost/targetuser/targetindex/+f/2c2/6b46b68ffc68f/pkg-1.0.doc.zip',
+        'http://localhost/targetuser/targetindex/+f/d0b/425e00e15a0d3/pkg-1.0.tar.gz',
+        'http://localhost/targetuser/targetindex/+f/d0b/425e00e15a0d3/pkg-1.0.tar.gz.toxresult0']
+
+
 def test_reject_pending_not_possible_for_mergeuser(mapp, mergeindex, testapp):
     r = testapp.patch_json(mergeindex.index, [
         'states+=rejected',

@@ -1,5 +1,6 @@
 from devpi_server.model import ensure_list
 from pluggy import HookimplMarker
+import json
 
 
 server_hookimpl = HookimplMarker("devpiserver")
@@ -142,30 +143,58 @@ class MergeStage(object):
                 version = self.stage.get_latest_version_perstage(project)
                 linkstore = self.stage.get_linkstore_perstage(project, version)
                 target.set_versiondata(linkstore.metadata)
+                toxresults = {}
+                for link in linkstore.get_links(rel='toxresult'):
+                    toxresults.setdefault(link.for_entrypath, []).append(link)
                 for link in linkstore.get_links():
                     try:
                         if link.rel == 'doczip':
                             new_link = target.store_doczip(
                                 project, version,
                                 link.entry.file_get_content())
-                        else:
+                            new_link.add_logs(
+                                x for x in link.get_logs()
+                                if x.get('what') != 'overwrite')
+                            new_link.add_log(
+                                'push',
+                                request.authenticated_userid,
+                                src=self.stage.name,
+                                dst=target.name,
+                                message=ixconfig['messages'][-1])
+                        elif link.rel == 'releasefile':
                             new_link = target.store_releasefile(
                                 project, version,
                                 link.basename, link.entry.file_get_content(),
                                 last_modified=link.entry.last_modified)
+                            new_link.add_logs(
+                                x for x in link.get_logs()
+                                if x.get('what') != 'overwrite')
+                            new_link.add_log(
+                                'push',
+                                request.authenticated_userid,
+                                src=self.stage.name,
+                                dst=target.name,
+                                message=ixconfig['messages'][-1])
+                            for tox_link in toxresults.get(link.relpath, []):
+                                new_tox_link = target.store_toxresult(
+                                    new_link,
+                                    json.loads(
+                                        tox_link.entry.file_get_content().decode('utf-8')))
+                                new_tox_link.add_logs(
+                                    x for x in tox_link.get_logs()
+                                    if x.get('what') != 'overwrite')
+                                new_tox_link.add_log(
+                                    'push',
+                                    request.authenticated_userid,
+                                    src=self.stage.name,
+                                    dst=target.name,
+                                    message=ixconfig['messages'][-1])
+                        else:
+                            continue
                     except target.NonVolatile as e:
                         request.apifatal(
                             409, "%s already exists in non-volatile index" % (
                                 e.link.basename,))
-                    new_link.add_logs(
-                        x for x in link.get_logs()
-                        if x.get('what') != 'overwrite')
-                    new_link.add_log(
-                        'push',
-                        request.authenticated_userid,
-                        src=self.stage.name,
-                        dst=target.name,
-                        message=ixconfig['messages'][-1])
         elif state == "rejected":
             if not request.has_permission("pypi_submit", context=target):
                 raise self.InvalidIndexconfig([
