@@ -52,18 +52,27 @@ def get_message(hub, msg):
 
 
 @contextmanager
-def devpi_pr_review_lock():
+def devpi_pr_review_lock(hub):
     if not os.path.exists(devpi_pr_data_dir):
         os.mkdir(devpi_pr_data_dir)
     lock_fn = os.path.join(devpi_pr_data_dir, "reviews.lock")
-    with open(lock_fn, "x"):
-        yield
-    os.remove(lock_fn)
+    try:
+        with open(lock_fn, "x"):
+            yield
+    except FileExistsError:
+        hub.fatal(
+            "There is an existing lock at %s\n"
+            "This can happen if a previous devpi-pr command crashed. "
+            "If you are sure there is no other devpi-pr command still running, "
+            "you can remove the file." % lock_fn)
+    else:
+        if os.path.exists(lock_fn):
+            os.remove(lock_fn)
 
 
 @contextmanager
-def devpi_pr_review_data():
-    with devpi_pr_review_lock():
+def devpi_pr_review_data(hub):
+    with devpi_pr_review_lock(hub):
         fn = os.path.join(devpi_pr_data_dir, "reviews.json")
         if os.path.exists(fn):
             with open(fn, "rb") as f:
@@ -172,7 +181,7 @@ def abort_pr_review_arguments(parser):
 def abort_pr_review(hub, args):
     (name,) = args.name
     indexinfos = require_merge_index(hub, name)
-    with devpi_pr_review_data() as review_data:
+    with devpi_pr_review_data(hub) as review_data:
         if indexinfos.indexname in review_data:
             hub.info("Aborted review of '%s'" % indexinfos.indexname)
             del review_data[indexinfos.indexname]
@@ -202,7 +211,7 @@ def approve_pr(hub, args):
     indexinfos = require_merge_index(hub, name)
     serial = args.serial
     if serial is None:
-        with devpi_pr_review_data() as review_data:
+        with devpi_pr_review_data(hub) as review_data:
             if indexinfos.indexname not in review_data:
                 hub.fatal(
                     "No review data found for '%s', "
@@ -217,7 +226,7 @@ def approve_pr(hub, args):
         headers={'X-Devpi-PR-Serial': serial})
     if not args.keep_index:
         hub.http_api("delete", indexinfos.url)
-    with devpi_pr_review_data() as review_data:
+    with devpi_pr_review_data(hub) as review_data:
         review_data.pop(indexinfos.indexname, None)
 
 
@@ -333,7 +342,7 @@ def list_prs(hub, args):
     for state in sorted(pr_data):
         if state in hidden_states:
             continue
-        with devpi_pr_review_data() as review_data:
+        with devpi_pr_review_data(hub) as review_data:
             out = create_pr_list_output(
                 pr_data[state], review_data, args.messages)
         hub.line("%s push requests" % state)
@@ -387,7 +396,7 @@ def review_pr(hub, args):
             break
     else:
         hub.fatal("Could not find PR '%s'." % indexinfos.indexname)
-    with devpi_pr_review_data() as review_data:
+    with devpi_pr_review_data(hub) as review_data:
         if indexinfos.indexname in review_data:
             if args.update:
                 hub.info("Updated review of '%s' to serial %s" % (
