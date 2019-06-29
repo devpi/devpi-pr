@@ -1,4 +1,5 @@
 import pytest
+import re
 try:
     from devpi_server import __version__  # noqa
 except ImportError:
@@ -301,15 +302,18 @@ def test_review_update(capfd, devpi, get_review_json, getjson, makepkg):
         "-m", "The push request was accepted",
         code=400)
     (out, err) = capfd.readouterr()
-    assert 'got X-Devpi-PR-Serial' in out
-    assert 'expected' in out
+    m = re.search(r'x-devpi-pr-serial (\d+), expected (\d+)', out, re.IGNORECASE)
+    got_serial = int(m.group(1))
+    expected_serial = int(m.group(2))
+    assert expected_serial > got_serial
     devpi(
         "review-pr",
         "%s/20190529" % devpi.user,
         "--update",
         code=200)
     (out, err) = capfd.readouterr()
-    assert "Updated review of '%s/20190529' to serial" % devpi.user in out
+    assert "Updated review of '%s/20190529' to serial %s" % (
+        devpi.user, expected_serial) in out
     assert list(get_review_json()) == ['%s/20190529' % devpi.user]
     second_serial = get_review_json()['%s/20190529' % devpi.user]
     assert int(second_serial) > int(first_serial)

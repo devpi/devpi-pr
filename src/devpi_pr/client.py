@@ -400,7 +400,7 @@ def review_pr(hub, args):
         if indexinfos.indexname in review_data:
             if args.update:
                 hub.info("Updated review of '%s' to serial %s" % (
-                    indexinfos.indexname, review_data[indexinfos.indexname]))
+                    indexinfos.indexname, last_serial))
             else:
                 hub.warn("Already reviewing '%s' at serial %s" % (
                     indexinfos.indexname, review_data[indexinfos.indexname]))
