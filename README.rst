@@ -1,4 +1,3 @@
-=======================================
 devpi-pr: push request plugin for devpi
 =======================================
 
@@ -9,7 +8,7 @@ This plugin adds a *push request* workflow to `devpi-server`_ and supporting com
 
 
 Installation
-============
+------------
 
 ``devpi-pr`` needs to be installed alongside ``devpi-server`` to enable *push request* functionality.
 
@@ -24,7 +23,7 @@ There is no configuration needed as ``devpi-server`` and ``devpi-client`` will a
 
 
 Motivation
-==========
+----------
 
 Many Python projects have complex dependencies and are often split into separate packages.
 
@@ -38,7 +37,7 @@ The result of a successful *push request* is a single atomic update of packages 
 
 
 Usage
-=====
+-----
 
 The ``devpi-pr`` plugin adds new commands when installed alongside ``devpi-client``.
 
@@ -79,7 +78,7 @@ otherwise a simple prompt is used.
 
 
 Creating a push request
------------------------
+~~~~~~~~~~~~~~~~~~~~~~~
 
 Lets say a new feature is created which requires changes in multiple packages.
 We are currently working on a development index ``user/dev`` where we have two changed packages ``pkg-app 1.0`` and ``app-dependency 1.2``.
@@ -138,7 +137,7 @@ The state of the *merge index* is now set to ``pending``.
 
 
 Reviewing a push request
-------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 Any user with write access to the target index (see ``acl_upload`` option of indexes in devpi-server) can now review the *push request*.
 
@@ -189,7 +188,7 @@ it can be rejected with the ``reject-pr`` command and a message:
 
 
 Manual creation of merge index
-------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 It's also possible to create a *push request* manually.
 This works without ``devpi-pr`` installed alongside ``devpi-client``,
