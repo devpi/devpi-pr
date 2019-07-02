@@ -470,11 +470,11 @@ def delete_pr(hub, args):
 def devpiclient_subcommands():
     return [
         (new_pr_arguments, "new-pr", "devpi_pr.client:new_pr"),
+        (submit_pr_arguments, "submit-pr", "devpi_pr.client:submit_pr"),
+        (list_prs_arguments, "list-prs", "devpi_pr.client:list_prs"),
+        (review_pr_arguments, "review-pr", "devpi_pr.client:review_pr"),
         (abort_pr_review_arguments, "abort-pr-review", "devpi_pr.client:abort_pr_review"),
         (approve_pr_arguments, "approve-pr", "devpi_pr.client:approve_pr"),
-        (list_prs_arguments, "list-prs", "devpi_pr.client:list_prs"),
         (reject_pr_arguments, "reject-pr", "devpi_pr.client:reject_pr"),
-        (review_pr_arguments, "review-pr", "devpi_pr.client:review_pr"),
-        (submit_pr_arguments, "submit-pr", "devpi_pr.client:submit_pr"),
         (cancel_pr_arguments, "cancel-pr", "devpi_pr.client:cancel_pr"),
         (delete_pr_arguments, "delete-pr", "devpi_pr.client:delete_pr")]
