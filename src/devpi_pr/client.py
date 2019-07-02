@@ -99,6 +99,8 @@ def full_indexname(hub, prname):
             hub.fatal("Invalid index name")
     else:
         user = hub.current.get_auth_user()
+        if user is None:
+            hub.fatal("not logged in")
     return "%s/%s" % (user, prname)
 
 
