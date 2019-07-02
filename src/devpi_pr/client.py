@@ -130,7 +130,7 @@ def require_merge_index(hub, name):
 
 
 def new_pr_arguments(parser):
-    """ create push request
+    """ Create a new push request.
     """
     parser.add_argument(
         "name", metavar="NAME", type=str, action="store", nargs=1,
@@ -173,7 +173,7 @@ def new_pr(hub, args):
 
 
 def abort_pr_review_arguments(parser):
-    """ abort review of push request
+    """ Abort review of push request.
     """
     parser.add_argument(
         "name", type=str, action="store", nargs=1,
@@ -192,7 +192,7 @@ def abort_pr_review(hub, args):
 
 
 def approve_pr_arguments(parser):
-    """ approve push request
+    """ Approve reviewed push request.
     """
     parser.add_argument(
         "name", type=str, action="store", nargs=1,
@@ -233,7 +233,7 @@ def approve_pr(hub, args):
 
 
 def list_prs_arguments(parser):
-    """ list push requests
+    """ List push requests.
     """
     parser.add_argument(
         "indexname", type=str, action="store", nargs="?",
@@ -352,7 +352,7 @@ def list_prs(hub, args):
 
 
 def reject_pr_arguments(parser):
-    """ reject push request
+    """ Reject push request.
     """
     parser.add_argument(
         "name", type=str, action="store", nargs=1,
@@ -372,7 +372,7 @@ def reject_pr(hub, args):
 
 
 def review_pr_arguments(parser):
-    """ start reviewing push request
+    """ Start reviewing a submitted push request.
     """
     parser.add_argument(
         "name", type=str, action="store", nargs=1,
@@ -415,7 +415,7 @@ def review_pr(hub, args):
 
 
 def submit_pr_arguments(parser):
-    """ submit push request
+    """ Submit an existing push request for review.
     """
     parser.add_argument(
         "name", type=str, action="store", nargs=1,
@@ -435,7 +435,7 @@ def submit_pr(hub, args):
 
 
 def cancel_pr_arguments(parser):
-    """ cancel push request
+    """ Cancel submitted state of push request by submitter.
     """
     parser.add_argument(
         "name", type=str, action="store", nargs=1,
@@ -455,7 +455,7 @@ def cancel_pr(hub, args):
 
 
 def delete_pr_arguments(parser):
-    """ delete push request
+    """ Completely remove a push request including any uploaded packages.
     """
     parser.add_argument(
         "name", type=str, action="store", nargs=1,

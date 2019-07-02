@@ -19,15 +19,15 @@ def test_commands(capsys):
         devpi.main.main(['devpi', '--help'])
     (out, err) = capsys.readouterr()
     assert e.value.code == 0
-    assert 'abort review of push request' in out
-    assert 'approve push request' in out
-    assert 'cancel push request' in out
-    assert 'create push request' in out
-    assert 'delete push request' in out
-    assert 'list push requests' in out
-    assert 'reject push request' in out
-    assert 'start reviewing push request' in out
-    assert 'submit push request' in out
+    assert 'abort-pr' in out
+    assert 'approve-pr' in out
+    assert 'cancel-pr' in out
+    assert 'new-pr' in out
+    assert 'delete-pr' in out
+    assert 'list-prs' in out
+    assert 'reject-pr' in out
+    assert 'review-pr' in out
+    assert 'submit-pr' in out
 
 
 @pytest.fixture(autouse=True)
