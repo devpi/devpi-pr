@@ -30,7 +30,7 @@ def get_message(hub, msg):
         hub.fatal("No EDITOR environment variable set.")
     with NamedTemporaryFile(prefix="devpi-pr-", suffix=".txt") as tf:
         tf.write(textwrap.dedent("""\n
-            # Please enter the message for your push request.
+            # Please enter the message for your pull request.
             # Lines starting with '#' will be ignored.
             # An empty message aborts the current command.""").encode('utf-8'))
         tf.flush()
@@ -130,11 +130,11 @@ def require_pr_index(hub, name):
 
 
 def new_pr_arguments(parser):
-    """ Create a new push request.
+    """ Create a new pull request.
     """
     parser.add_argument(
         "name", metavar="NAME", type=str, action="store", nargs=1,
-        help="push request name")
+        help="pull request name")
     parser.add_argument(
         "target", metavar="TARGETSPEC", type=str, nargs=1,
         action="store",
@@ -143,7 +143,7 @@ def new_pr_arguments(parser):
         "pkgspec", metavar="PKGSPEC", type=str, nargs="*",
         default=None, action="store",
         help="releases in format 'name==version' which are added to "
-             "this push request.")
+             "this pull request.")
 
 
 def new_pr(hub, args):
@@ -160,7 +160,7 @@ def new_pr(hub, args):
     url = hub.current.get_index_url(indexname, slash=False)
     hub.http_api("put", url, dict(
         type="pr", bases=target,
-        states=["new"], messages=["New push request"]))
+        states=["new"], messages=["New pull request"]))
     for req in reqs:
         hub.http_api(
             "push",
@@ -173,11 +173,11 @@ def new_pr(hub, args):
 
 
 def abort_pr_review_arguments(parser):
-    """ Abort review of push request.
+    """ Abort review of pull request.
     """
     parser.add_argument(
         "name", type=str, action="store", nargs=1,
-        help="push request name")
+        help="pull request name")
 
 
 def abort_pr_review(hub, args):
@@ -192,14 +192,14 @@ def abort_pr_review(hub, args):
 
 
 def approve_pr_arguments(parser):
-    """ Approve reviewed push request.
+    """ Approve reviewed pull request.
     """
     parser.add_argument(
         "name", type=str, action="store", nargs=1,
-        help="push request name")
+        help="pull request name")
     parser.add_argument(
         "-s", "--serial", type=str, action="store",
-        help="push request serial, only required if not using 'review-pr' first")
+        help="pull request serial, only required if not using 'review-pr' first")
     parser.add_argument(
         "-m", "--message", action="store",
         help="Message to add on submit.")
@@ -233,7 +233,7 @@ def approve_pr(hub, args):
 
 
 def list_prs_arguments(parser):
-    """ List push requests.
+    """ List pull requests.
     """
     parser.add_argument(
         "indexname", type=str, action="store", nargs="?",
@@ -312,9 +312,9 @@ def list_prs(hub, args):
     hidden_states = set()
     if not args.all_states:
         hidden_states.add("approved")
-    push_requests_allowed = ixconfig.get("push_requests_allowed", False)
+    pull_requests_allowed = ixconfig.get("pull_requests_allowed", False)
     is_pr_index = ixconfig["type"] == "pr"
-    if push_requests_allowed or is_pr_index:
+    if pull_requests_allowed or is_pr_index:
         list_url = index_url.asdir().joinpath("+pr-list")
         r = hub.http_api("get", list_url, type="pr-list")
         index_data = r.result
@@ -347,16 +347,16 @@ def list_prs(hub, args):
         with devpi_pr_review_data(hub) as review_data:
             out = create_pr_list_output(
                 pr_data[state], review_data, args.messages)
-        hub.line("%s push requests" % state)
+        hub.line("%s pull requests" % state)
         hub.line(textwrap.indent(out, "    "))
 
 
 def reject_pr_arguments(parser):
-    """ Reject push request.
+    """ Reject pull request.
     """
     parser.add_argument(
         "name", type=str, action="store", nargs=1,
-        help="push request name")
+        help="pull request name")
     parser.add_argument(
         "-m", "--message", action="store",
         help="Message to add on reject.")
@@ -372,11 +372,11 @@ def reject_pr(hub, args):
 
 
 def review_pr_arguments(parser):
-    """ Start reviewing a submitted push request.
+    """ Start reviewing a submitted pull request.
     """
     parser.add_argument(
         "name", type=str, action="store", nargs=1,
-        help="push request name")
+        help="pull request name")
     parser.add_argument(
         "-u", "--update", action="store_true",
         help="Update the serial of the review.")
@@ -415,11 +415,11 @@ def review_pr(hub, args):
 
 
 def submit_pr_arguments(parser):
-    """ Submit an existing push request for review.
+    """ Submit an existing pull request for review.
     """
     parser.add_argument(
         "name", type=str, action="store", nargs=1,
-        help="push request name")
+        help="pull request name")
     parser.add_argument(
         "-m", "--message", action="store",
         help="Message to add on submit.")
@@ -435,11 +435,11 @@ def submit_pr(hub, args):
 
 
 def cancel_pr_arguments(parser):
-    """ Cancel submitted state of push request by submitter.
+    """ Cancel submitted state of pull request by submitter.
     """
     parser.add_argument(
         "name", type=str, action="store", nargs=1,
-        help="push request name")
+        help="pull request name")
     parser.add_argument(
         "-m", "--message", action="store",
         help="Message to add on cancel.")
@@ -455,11 +455,11 @@ def cancel_pr(hub, args):
 
 
 def delete_pr_arguments(parser):
-    """ Completely remove a push request including any uploaded packages.
+    """ Completely remove a pull request including any uploaded packages.
     """
     parser.add_argument(
         "name", type=str, action="store", nargs=1,
-        help="push request name")
+        help="pull request name")
 
 
 def delete_pr(hub, args):

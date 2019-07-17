@@ -39,10 +39,10 @@ class PRStage(object):
         newstate = newconfig["states"][-1]
         if newstate == "pending":
             target = self.stage.xom.model.getstage(newconfig["bases"][0])
-            if not target.ixconfig.get("push_requests_allowed", False):
+            if not target.ixconfig.get("pull_requests_allowed", False):
                 errors.append(
                     "The target index '%s' doesn't allow "
-                    "push requests" % target.name)
+                    "pull requests" % target.name)
             if is_stage_empty(self.stage):
                 errors.append(
                     "The pr index has no packages")
@@ -214,7 +214,7 @@ def devpiserver_get_stage_customizer_classes():
 def devpiserver_indexconfig_defaults(index_type):
     if index_type == "stage":
         return {
-            'push_requests_allowed': False}
+            'pull_requests_allowed': False}
     return {}
 
 

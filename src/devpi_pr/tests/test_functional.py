@@ -34,14 +34,14 @@ def test_manual_index_creation(capfd, devpi, getjson, makepkg):
         "manual",
         "type=pr",
         "states=new",
-        "messages=New push request",
+        "messages=New pull request",
         "bases=%s/dev" % devpi.target,
         code=200)
     (out, err) = capfd.readouterr()
     data = getjson("manual")["result"]
     assert data["type"] == "pr"
     assert data["states"] == ["new"]
-    assert data["messages"] == ["New push request"]
+    assert data["messages"] == ["New pull request"]
     pkg = makepkg("hello-1.0.tar.gz", b"content1", "hello", "1.0")
     devpi(
         "upload",
@@ -57,7 +57,7 @@ def test_manual_index_creation(capfd, devpi, getjson, makepkg):
     data = getjson("manual")["result"]
     assert data["states"] == ["new", "pending"]
     assert data["messages"] == [
-        "New push request",
+        "New pull request",
         "Please accept these updated packages"]
 
 
@@ -71,7 +71,7 @@ def test_index_creation(capfd, devpi, getjson, makepkg):
     data = getjson("20180717")["result"]
     assert data["type"] == "pr"
     assert data["states"] == ["new"]
-    assert data["messages"] == ["New push request"]
+    assert data["messages"] == ["New pull request"]
     pkg = makepkg("hello-1.0.tar.gz", b"content1", "hello", "1.0")
     devpi(
         "upload",
@@ -86,7 +86,7 @@ def test_index_creation(capfd, devpi, getjson, makepkg):
     data = getjson("20180717")["result"]
     assert data["states"] == ["new", "pending"]
     assert data["messages"] == [
-        "New push request",
+        "New pull request",
         "Please accept these updated packages"]
 
 
@@ -123,7 +123,7 @@ def test_approval(capfd, devpi, get_review_json, getjson, keep_index, makepkg, u
         code=200)
     (out, err) = capfd.readouterr()
     lines = out.splitlines()
-    assert 'pending push requests' in lines[-2]
+    assert 'pending pull requests' in lines[-2]
     if use_review_cmd:
         devpi(
             "review-pr",
@@ -137,7 +137,7 @@ def test_approval(capfd, devpi, get_review_json, getjson, keep_index, makepkg, u
     args = [
         "approve-pr",
         "%s/20180717" % devpi.user,
-        "-m", "The push request was accepted"]
+        "-m", "The pull request was accepted"]
     if not use_review_cmd:
         args.extend(["--serial", serial])
     if keep_index:
@@ -146,9 +146,9 @@ def test_approval(capfd, devpi, get_review_json, getjson, keep_index, makepkg, u
         data = getjson("20180717")["result"]
         assert data["states"] == ["new", "pending", "approved"]
         assert data["messages"] == [
-            "New push request",
+            "New pull request",
             "Please accept these updated packages",
-            "The push request was accepted"]
+            "The pull request was accepted"]
     else:
         devpi(*args, code=201)
     if use_review_cmd:
@@ -172,7 +172,7 @@ def test_approval(capfd, devpi, get_review_json, getjson, keep_index, makepkg, u
         'who': '%s' % devpi.user}
     assert push == {
         'dst': '%s/dev' % devpi.target,
-        'message': 'The push request was accepted',
+        'message': 'The pull request was accepted',
         'src': '%s/20180717' % devpi.user,
         'what': 'push',
         'who': '%s' % devpi.target}
@@ -299,7 +299,7 @@ def test_review_update(capfd, devpi, get_review_json, getjson, makepkg):
     devpi(
         "approve-pr",
         "%s/20190529" % devpi.user,
-        "-m", "The push request was accepted",
+        "-m", "The pull request was accepted",
         code=400)
     (out, err) = capfd.readouterr()
     m = re.search(r'x-devpi-pr-serial (\d+), expected (\d+)', out, re.IGNORECASE)
@@ -320,7 +320,7 @@ def test_review_update(capfd, devpi, get_review_json, getjson, makepkg):
     devpi(
         "approve-pr",
         "%s/20190529" % devpi.user,
-        "-m", "The push request was accepted",
+        "-m", "The pull request was accepted",
         code=201)
     data = getjson("%s/dev" % devpi.target)["result"]
     assert data['projects'] == ['hello', 'pkg']
@@ -346,7 +346,7 @@ def test_add_on_create(capfd, devpi, getjson, makepkg):
         code=200)
     (out, err) = capfd.readouterr()
     lines = list(x.strip() for x in out.splitlines()[-2:])
-    assert lines[0] == "new push requests"
+    assert lines[0] == "new pull requests"
     assert lines[1].startswith(
         "%s/20190128 -> %s/dev" % (devpi.user, devpi.target))
     data = getjson("/%s/20190128" % devpi.user)["result"]
@@ -380,7 +380,7 @@ def test_reject(capfd, devpi, getjson, makepkg):
     devpi(
         "reject-pr",
         "%s/20190128" % devpi.user,
-        "-m", "The push request was rejected",
+        "-m", "The pull request was rejected",
         code=200)
     # clear output
     capfd.readouterr()
@@ -389,18 +389,18 @@ def test_reject(capfd, devpi, getjson, makepkg):
         code=200)
     (out, err) = capfd.readouterr()
     lines = list(x.strip() for x in out.splitlines()[-2:])
-    assert lines[0] == "rejected push requests"
+    assert lines[0] == "rejected pull requests"
     assert lines[1].startswith(
         "%s/20190128 -> %s/dev" % (devpi.user, devpi.target))
     data = getjson("20190128")["result"]
     assert data["states"] == ["new", "pending", "rejected"]
     assert data["messages"] == [
-        "New push request",
+        "New pull request",
         "Please accept these updated packages",
-        "The push request was rejected"]
+        "The pull request was rejected"]
     data = getjson("%s/dev" % devpi.target)["result"]
     assert data['projects'] == []
-    # login as push request user
+    # login as pull request user
     devpi("login", devpi.user, "--password", "123")
     devpi("use", "dev")
     # submit again
@@ -412,9 +412,9 @@ def test_reject(capfd, devpi, getjson, makepkg):
     data = getjson("20190128")["result"]
     assert data["states"] == ["new", "pending", "rejected", "pending"]
     assert data["messages"] == [
-        "New push request",
+        "New pull request",
         "Please accept these updated packages",
-        "The push request was rejected",
+        "The pull request was rejected",
         "Please accept these fixed packages"]
     data = getjson("%s/dev" % devpi.target)["result"]
     assert data['projects'] == []
@@ -449,13 +449,13 @@ def test_cancel(capfd, devpi, getjson, makepkg):
         code=200)
     (out, err) = capfd.readouterr()
     lines = list(x.strip() for x in out.splitlines()[-2:])
-    assert lines[0] == "new push requests"
+    assert lines[0] == "new pull requests"
     assert lines[1].startswith(
         "%s/20190128 -> %s/dev" % (devpi.user, devpi.target))
     data = getjson("20190128")["result"]
     assert data["states"] == ["new", "pending", "new"]
     assert data["messages"] == [
-        "New push request",
+        "New pull request",
         "Please accept these updated packages",
         "Never mind"]
     data = getjson("%s/dev" % devpi.target)["result"]
@@ -475,7 +475,7 @@ def test_delete(capfd, devpi):
         code=200)
     (out, err) = capfd.readouterr()
     lines = list(x.strip() for x in out.splitlines()[-2:])
-    assert lines[0] == "new push requests"
+    assert lines[0] == "new pull requests"
     assert lines[1].startswith(
         "%s/20190128 -> %s/dev" % (devpi.user, devpi.target))
     devpi(
@@ -540,9 +540,9 @@ def test_pr_listing(capfd, devpi, getjson, makepkg):
         "list-prs",
         code=200)
     (out, err) = capfd.readouterr()
-    assert "new push requests" not in out
+    assert "new pull requests" not in out
     assert "%s/20181217" % devpi.user not in out
-    assert "pending push requests" in out
+    assert "pending pull requests" in out
     assert "%s/20180717" % devpi.user in out
     assert "%s/20190529" % devpi.user in out
     assert "(reviewing)" in out
@@ -551,9 +551,9 @@ def test_pr_listing(capfd, devpi, getjson, makepkg):
         "list-prs", "-a",
         code=200)
     (out, err) = capfd.readouterr()
-    assert "new push requests" in out
+    assert "new pull requests" in out
     assert "%s/20181217" % devpi.user in out
-    assert "pending push requests" in out
+    assert "pending pull requests" in out
     assert "%s/20180717" % devpi.user in out
     assert "%s/20190529" % devpi.user in out
     assert "(reviewing)" in out
@@ -562,9 +562,9 @@ def test_pr_listing(capfd, devpi, getjson, makepkg):
         "list-prs", "-m",
         code=200)
     (out, err) = capfd.readouterr()
-    assert "new push requests" not in out
+    assert "new pull requests" not in out
     assert "%s/20181217" % devpi.user not in out
-    assert "pending push requests" in out
+    assert "pending pull requests" in out
     assert "%s/20180717" % devpi.user in out
     assert "%s/20190529" % devpi.user in out
     assert "(reviewing)" in out

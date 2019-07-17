@@ -30,11 +30,11 @@ def targetindex(mapp, testapp):
     mapp.create_and_login_user("targetuser")
     result = mapp.create_index("targetindex")
     r = testapp.get_json(result.index)
-    assert r.json["result"]["push_requests_allowed"] is False
+    assert r.json["result"]["pull_requests_allowed"] is False
     r = testapp.patch_json(result.index, dict(
         r.json["result"],
-        push_requests_allowed=True))
-    assert r.json["result"]["push_requests_allowed"] is True
+        pull_requests_allowed=True))
+    assert r.json["result"]["pull_requests_allowed"] is True
     return result
 
 
@@ -46,7 +46,7 @@ def new_prindex(mapp, targetindex):
         indexconfig=dict(
             type="pr",
             states="new",
-            messages="New push request",
+            messages="New pull request",
             bases=[targetindex.stagename]))
     return api
 
@@ -69,25 +69,25 @@ def test_new_pr_index(new_prindex, targetindex, testapp):
     assert result['type'] == 'pr'
     assert result['acl_upload'] == ['pruser']
     assert result['bases'] == [targetindex.stagename]
-    assert result['messages'] == ['New push request']
+    assert result['messages'] == ['New pull request']
     assert result['states'] == ['new']
 
 
 def test_submit_pr_index_not_allowed(mapp, new_prindex, targetindex, testapp):
-    # first turn off push_requests_allowed
+    # first turn off pull_requests_allowed
     mapp.login(targetindex.stagename.split('/')[0], "123")
     r = testapp.get_json(targetindex.index)
     r = testapp.patch_json(targetindex.index, dict(
         r.json["result"],
-        push_requests_allowed=False))
-    assert r.json["result"]["push_requests_allowed"] is False
+        pull_requests_allowed=False))
+    assert r.json["result"]["pull_requests_allowed"] is False
     # now try to submit
     mapp.login(new_prindex.stagename.split('/')[0], "123")
     r = testapp.patch_json(new_prindex.index, [
         'states+=pending',
         'messages+=Please approve'], expect_errors=True)
     assert r.json["message"] == (
-        "The target index '%s' doesn't allow push requests, "
+        "The target index '%s' doesn't allow pull requests, "
         "The pr index has no packages" % targetindex.stagename)
 
 
@@ -111,7 +111,7 @@ def test_submit_pr_index(mapp, new_prindex, targetindex, testapp):
     assert result['type'] == 'pr'
     assert result['acl_upload'] == ['pruser']
     assert result['bases'] == [targetindex.stagename]
-    assert result['messages'] == ['New push request', 'Please approve']
+    assert result['messages'] == ['New pull request', 'Please approve']
     assert result['states'] == ['new', 'pending']
 
 
@@ -148,7 +148,7 @@ def test_approve_pending(mapp, prindex, targetindex, testapp):
     assert result['type'] == 'pr'
     assert result['acl_upload'] == ['pruser']
     assert result['bases'] == [targetindex.stagename]
-    assert result['messages'] == ['New push request', 'Please approve', 'Approve']
+    assert result['messages'] == ['New pull request', 'Please approve', 'Approve']
     assert result['states'] == ['new', 'pending', 'approved']
     # now the targetindex should have the project
     r = testapp.get_json(targetindex.index)
@@ -202,7 +202,7 @@ def test_approve_with_toxresult_and_docs(mapp, prindex, targetindex, testapp):
     assert result['type'] == 'pr'
     assert result['acl_upload'] == ['pruser']
     assert result['bases'] == [targetindex.stagename]
-    assert result['messages'] == ['New push request', 'Please approve', 'Approve']
+    assert result['messages'] == ['New pull request', 'Please approve', 'Approve']
     assert result['states'] == ['new', 'pending', 'approved']
     # now the targetindex should have the project
     r = testapp.get_json(targetindex.index)
@@ -254,7 +254,7 @@ def test_cancel_pending(mapp, prindex, targetindex, testapp):
     assert result['type'] == 'pr'
     assert result['acl_upload'] == ['pruser']
     assert result['bases'] == [targetindex.stagename]
-    assert result['messages'] == ['New push request', 'Please approve', 'Cancel']
+    assert result['messages'] == ['New pull request', 'Please approve', 'Cancel']
     assert result['states'] == ['new', 'pending', 'new']
 
 
@@ -275,7 +275,7 @@ def test_approve_already_approved(mapp, prindex, targetindex, testapp):
     assert result['type'] == 'pr'
     assert result['acl_upload'] == ['pruser']
     assert result['bases'] == [targetindex.stagename]
-    assert result['messages'] == ['New push request', 'Please approve', 'Approve']
+    assert result['messages'] == ['New pull request', 'Please approve', 'Approve']
     assert result['states'] == ['new', 'pending', 'approved']
     # we try it again
     headers = {'X-Devpi-PR-Serial': '9'}
@@ -304,7 +304,7 @@ def test_approve_wrong_serial(mapp, prindex, targetindex, testapp):
     assert result['type'] == 'pr'
     assert result['acl_upload'] == ['pruser']
     assert result['bases'] == [targetindex.stagename]
-    assert result['messages'] == ['New push request', 'Please approve']
+    assert result['messages'] == ['New pull request', 'Please approve']
     assert result['states'] == ['new', 'pending']
 
 
@@ -335,7 +335,7 @@ def test_approve_nonvolatile_conflict(mapp, prindex, targetindex, testapp):
         indexconfig=dict(
             type="pr",
             states="new",
-            messages="New push request",
+            messages="New pull request",
             bases=[targetindex.stagename]))
     content1 = mapp.makepkg("pkg-1.0.tar.gz", b"content1", "pkg", "1.0")
     mapp.upload_file_pypi(
@@ -363,7 +363,7 @@ def test_pr_list(mapp, new_prindex, targetindex, testapp):
         'last_serial': 5,
         'by': ['pruser'],
         'states': ['new'],
-        'messages': ['New push request']}]}}
+        'messages': ['New pull request']}]}}
     r = testapp.get_json(new_prindex.index + "/+pr-list")
     result = r.json['result']
     assert result == {'new': {'pruser': [{
@@ -372,7 +372,7 @@ def test_pr_list(mapp, new_prindex, targetindex, testapp):
         'last_serial': 5,
         'by': ['pruser'],
         'states': ['new'],
-        'messages': ['New push request']}]}}
+        'messages': ['New pull request']}]}}
     r = testapp.get_json("/pruser/+pr-list")
     result = r.json['result']
     assert result == {'new': {'pruser': [{
@@ -381,7 +381,7 @@ def test_pr_list(mapp, new_prindex, targetindex, testapp):
         'last_serial': 5,
         'by': ['pruser'],
         'states': ['new'],
-        'messages': ['New push request']}]}}
+        'messages': ['New pull request']}]}}
     content1 = mapp.makepkg("pkg-1.0.tar.gz", b"content1", "pkg", "1.0")
     mapp.upload_file_pypi(
         "pkg-1.0.tar.gz", content1, "pkg", "1.0",
@@ -397,7 +397,7 @@ def test_pr_list(mapp, new_prindex, targetindex, testapp):
         'last_serial': 8,
         'by': ['pruser', 'pruser'],
         'states': ['new', 'pending'],
-        'messages': ['New push request', 'Please approve']}]}}
+        'messages': ['New pull request', 'Please approve']}]}}
     r = testapp.get_json("/pruser/+pr-list")
     result = r.json['result']
     assert result == {'pending': {'pruser': [{
@@ -406,7 +406,7 @@ def test_pr_list(mapp, new_prindex, targetindex, testapp):
         'last_serial': 8,
         'by': ['pruser', 'pruser'],
         'states': ['new', 'pending'],
-        'messages': ['New push request', 'Please approve']}]}}
+        'messages': ['New pull request', 'Please approve']}]}}
 
 
 def test_pr_list_serial(mapp, new_prindex, targetindex, testapp):
@@ -418,7 +418,7 @@ def test_pr_list_serial(mapp, new_prindex, targetindex, testapp):
         'last_serial': 5,
         'by': ['pruser'],
         'states': ['new'],
-        'messages': ['New push request']}]}}
+        'messages': ['New pull request']}]}}
     content1 = mapp.makepkg("pkg-1.0.tar.gz", b"content1", "pkg", "1.0")
     mapp.upload_file_pypi(
         "pkg-1.0.tar.gz", content1, "pkg", "1.0",
@@ -432,7 +432,7 @@ def test_pr_list_serial(mapp, new_prindex, targetindex, testapp):
         'last_serial': 7,
         'by': ['pruser'],
         'states': ['new'],
-        'messages': ['New push request']}]}}
+        'messages': ['New pull request']}]}}
     r = testapp.patch_json(new_prindex.index, [
         'states+=pending',
         'messages+=Please approve'])
@@ -445,7 +445,7 @@ def test_pr_list_serial(mapp, new_prindex, targetindex, testapp):
         'last_serial': 8,
         'by': ['pruser', 'pruser'],
         'states': ['new', 'pending'],
-        'messages': ['New push request', 'Please approve']}]}}
+        'messages': ['New pull request', 'Please approve']}]}}
     content2 = mapp.makepkg("pkg-1.0.zip", b"content2", "pkg", "1.0")
     mapp.upload_file_pypi(
         "pkg-1.0.zip", content2, "pkg", "1.0",
@@ -459,13 +459,13 @@ def test_pr_list_serial(mapp, new_prindex, targetindex, testapp):
         'last_serial': 9,
         'by': ['pruser', 'pruser'],
         'states': ['new', 'pending'],
-        'messages': ['New push request', 'Please approve']}]}}
+        'messages': ['New pull request', 'Please approve']}]}}
     mapp.create_index(
         "other",
         indexconfig=dict(
             type="pr",
             states="new",
-            messages="Different push request",
+            messages="Different pull request",
             bases=[targetindex.stagename]))
     r = testapp.get_json(targetindex.index + "/+pr-list")
     result = r.json['result']
@@ -477,14 +477,14 @@ def test_pr_list_serial(mapp, new_prindex, targetindex, testapp):
             'last_serial': 9,
             'by': ['pruser', 'pruser'],
             'states': ['new', 'pending'],
-            'messages': ['New push request', 'Please approve']}]},
+            'messages': ['New pull request', 'Please approve']}]},
         'new': {'pruser': [{
             'name': 'other',
             'base': 'targetuser/targetindex',
             'last_serial': 10,
             'by': ['pruser'],
             'states': ['new'],
-            'messages': ['Different push request']}]}}
+            'messages': ['Different pull request']}]}}
     # we register another project
     mapp.use("pruser/index")
     mapp.set_versiondata(dict(name="hello", version="1.0"), set_whitelist=False)
@@ -498,14 +498,14 @@ def test_pr_list_serial(mapp, new_prindex, targetindex, testapp):
             'last_serial': 11,
             'by': ['pruser', 'pruser'],
             'states': ['new', 'pending'],
-            'messages': ['New push request', 'Please approve']}]},
+            'messages': ['New pull request', 'Please approve']}]},
         'new': {'pruser': [{
             'name': 'other',
             'base': 'targetuser/targetindex',
             'last_serial': 10,
             'by': ['pruser'],
             'states': ['new'],
-            'messages': ['Different push request']}]}}
+            'messages': ['Different pull request']}]}}
     # now we delete a project
     mapp.delete_project("pkg")
     r = testapp.get_json(targetindex.index + "/+pr-list")
@@ -518,14 +518,14 @@ def test_pr_list_serial(mapp, new_prindex, targetindex, testapp):
             'last_serial': 12,
             'by': ['pruser', 'pruser'],
             'states': ['new', 'pending'],
-            'messages': ['New push request', 'Please approve']}]},
+            'messages': ['New pull request', 'Please approve']}]},
         'new': {'pruser': [{
             'name': 'other',
             'base': 'targetuser/targetindex',
             'last_serial': 10,
             'by': ['pruser'],
             'states': ['new'],
-            'messages': ['Different push request']}]}}
+            'messages': ['Different pull request']}]}}
 
 
 def test_pr_list_approved(mapp, new_prindex, targetindex, testapp):
@@ -544,7 +544,7 @@ def test_pr_list_approved(mapp, new_prindex, targetindex, testapp):
         'last_serial': 8,
         'by': ['pruser', 'pruser'],
         'states': ['new', 'pending'],
-        'messages': ['New push request', 'Please approve']}]}}
+        'messages': ['New pull request', 'Please approve']}]}}
     r = testapp.get_json("/pruser/+pr-list")
     result = r.json['result']
     assert result == {'pending': {'pruser': [{
@@ -553,7 +553,7 @@ def test_pr_list_approved(mapp, new_prindex, targetindex, testapp):
         'last_serial': 8,
         'by': ['pruser', 'pruser'],
         'states': ['new', 'pending'],
-        'messages': ['New push request', 'Please approve']}]}}
+        'messages': ['New pull request', 'Please approve']}]}}
     # we approve the pr index
     mapp.login(targetindex.stagename.split('/')[0], "123")
     headers = {'X-Devpi-PR-Serial': '8'}
@@ -568,7 +568,7 @@ def test_pr_list_approved(mapp, new_prindex, targetindex, testapp):
         'last_serial': 9,
         'by': ['pruser', 'pruser', 'targetuser'],
         'states': ['new', 'pending', 'approved'],
-        'messages': ['New push request', 'Please approve', 'Approve']}]}}
+        'messages': ['New pull request', 'Please approve', 'Approve']}]}}
     r = testapp.get_json("/pruser/+pr-list")
     result = r.json['result']
     assert result == {'approved': {'pruser': [{
@@ -577,4 +577,4 @@ def test_pr_list_approved(mapp, new_prindex, targetindex, testapp):
         'last_serial': 9,
         'by': ['pruser', 'pruser', 'targetuser'],
         'states': ['new', 'pending', 'approved'],
-        'messages': ['New push request', 'Please approve', 'Approve']}]}}
+        'messages': ['New pull request', 'Please approve', 'Approve']}]}}

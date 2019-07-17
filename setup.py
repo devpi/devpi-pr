@@ -20,7 +20,7 @@ CHANGELOG = open(os.path.join(here, 'CHANGELOG.rst'), 'rb').read().decode('utf-8
 
 setup(
     name="devpi-pr",
-    description="devpi-pr: a push request workflow plugin for devpi-server and devpi-client",
+    description="devpi-pr: a pull request workflow plugin for devpi-server and devpi-client",
     long_description=README + "\n\n" + CHANGELOG,
     url="http://doc.devpi.net",
     version=get_version(os.path.join("src", "devpi_pr")),

@@ -17,7 +17,7 @@ def index_pr_list(context, request):
                     messages=ixconfig["messages"],
                     by=ixconfig["changers"])]}})
     result = {}
-    if not context.stage.ixconfig.get("push_requests_allowed", False):
+    if not context.stage.ixconfig.get("pull_requests_allowed", False):
         apireturn(200, type="pr-list", result=result)
     targetindex_name = context.stage.name
     for user in context.model.get_userlist():
