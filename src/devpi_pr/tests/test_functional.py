@@ -32,14 +32,14 @@ def test_manual_index_creation(capfd, devpi, getjson, makepkg):
     devpi(
         "index", "-c",
         "manual",
-        "type=merge",
+        "type=pr",
         "states=new",
         "messages=New push request",
         "bases=%s/dev" % devpi.target,
         code=200)
     (out, err) = capfd.readouterr()
     data = getjson("manual")["result"]
-    assert data["type"] == "merge"
+    assert data["type"] == "pr"
     assert data["states"] == ["new"]
     assert data["messages"] == ["New push request"]
     pkg = makepkg("hello-1.0.tar.gz", b"content1", "hello", "1.0")
@@ -69,7 +69,7 @@ def test_index_creation(capfd, devpi, getjson, makepkg):
         code=200)
     (out, err) = capfd.readouterr()
     data = getjson("20180717")["result"]
-    assert data["type"] == "merge"
+    assert data["type"] == "pr"
     assert data["states"] == ["new"]
     assert data["messages"] == ["New push request"]
     pkg = makepkg("hello-1.0.tar.gz", b"content1", "hello", "1.0")
@@ -578,20 +578,20 @@ def test_index_not_found(capfd, devpi):
     devpi("approve-pr", "nonexisting", "--serial", "10", "-m", "msg", code=404)
     (out, err) = capfd.readouterr()
     last_line = out.splitlines()[-1].strip()
-    assert last_line == "Couldn't access merge index 'nonexisting': Not Found"
+    assert last_line == "Couldn't access pr index 'nonexisting': Not Found"
     devpi("reject-pr", "nonexisting", "-m", "msg", code=404)
     (out, err) = capfd.readouterr()
     last_line = out.splitlines()[-1].strip()
-    assert last_line == "Couldn't access merge index 'nonexisting': Not Found"
+    assert last_line == "Couldn't access pr index 'nonexisting': Not Found"
     devpi("submit-pr", "nonexisting", "-m", "msg", code=404)
     (out, err) = capfd.readouterr()
     last_line = out.splitlines()[-1].strip()
-    assert last_line == "Couldn't access merge index 'nonexisting': Not Found"
+    assert last_line == "Couldn't access pr index 'nonexisting': Not Found"
     devpi("cancel-pr", "nonexisting", "-m", "msg", code=404)
     (out, err) = capfd.readouterr()
     last_line = out.splitlines()[-1].strip()
-    assert last_line == "Couldn't access merge index 'nonexisting': Not Found"
+    assert last_line == "Couldn't access pr index 'nonexisting': Not Found"
     devpi("delete-pr", "nonexisting", code=404)
     (out, err) = capfd.readouterr()
     last_line = out.splitlines()[-1].strip()
-    assert last_line == "Couldn't access merge index 'nonexisting': Not Found"
+    assert last_line == "Couldn't access pr index 'nonexisting': Not Found"

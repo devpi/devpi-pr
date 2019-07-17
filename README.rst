@@ -69,7 +69,7 @@ The ``devpi-pr`` plugin adds new commands when installed alongside ``devpi-clien
     Completely remove a push request including any uploaded packages.
 
 
-In ``devpi-server`` a *push request* is represented by a special *merge index*.
+In ``devpi-server`` a *push request* is represented by a special *pr index*.
 It behaves mostly like a regular index with some additional restrictions and behaviors.
 
 All commands which change the state of a *push request* ask for a message and accept the ``-m`` option to provide it directly.
@@ -104,17 +104,17 @@ We first create a new *push request* for the target:
 
     $ devpi new-pr new-feature prod/main
 
-This creates a new *merge index* named ``user/new-feature``.
+This creates a new *pr index* named ``user/new-feature``.
 
-Next we push the existing packages from our development index into the *merge index*.
+Next we push the existing packages from our development index into the *pr index*.
 
 .. code-block:: bash
 
     $ devpi push pkg-app==1.0 user/new-feature
     $ devpi push app-dependency==1.2 user/new-feature
 
-As the *merge index* is mostly like a regular index,
-it is also possible to upload new packages directly to the *merge index* with ``devpi upload`` or standard tools like ``twine``.
+As the *pr index* is mostly like a regular index,
+it is also possible to upload new packages directly to the *pr index* with ``devpi upload`` or standard tools like ``twine``.
 
 For convenience it is also possible to list multiple packages upon first creation to let them automatically be copied:
 
@@ -133,7 +133,7 @@ Afterwards the *push request* can be submitted for review:
 
 This will ask for a message.
 
-The state of the *merge index* is now set to ``pending``.
+The state of the *pr index* is now set to ``pending``.
 
 
 Reviewing a push request
@@ -155,7 +155,7 @@ A review is started with the ``review-pr`` command:
 
     $ devpi review-pr new-feature
 
-At this point the *merge index* can be used to install the new packages with ``pip`` etc just as a regular index.
+At this point the *pr index* can be used to install the new packages with ``pip`` etc just as a regular index.
 
 Once the review is complete it can be accepted:
 
@@ -166,7 +166,7 @@ Once the review is complete it can be accepted:
 This again requires a message like for the ``submit-pr`` command.
 
 When the *push request* is accepted the latest contained version of all packages is copied to the target index in one atomic step.
-Afterwards the *merge index* is automatically deleted.
+Afterwards the *pr index* is automatically deleted.
 
 If there have been any changes on the index after the ``review-pr`` command,
 then the ``accept-pr`` command will fail.
@@ -187,19 +187,19 @@ it can be rejected with the ``reject-pr`` command and a message:
     $ devpi reject-pr new-feature -m "See comments in ticket #42 about a bug I found."
 
 
-Manual creation of merge index
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Manual creation of pr index
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 It's also possible to create a *push request* manually.
 This works without ``devpi-pr`` installed alongside ``devpi-client``,
 but is more complex.
 
-First a new *merge index* needs to be created.
-The index must be of type ``merge``, the target index specified in ``bases`` and ``states`` and ``messages`` be set:
+First a new *pr index* needs to be created.
+The index must be of type ``pr``, the target index specified in ``bases`` and ``states`` and ``messages`` be set:
 
 .. code-block:: bash
 
-    $ devpi index -c new-feature type=merge bases=prod/main states=new messages="New push request"
+    $ devpi index -c new-feature type=pr bases=prod/main states=new messages="New push request"
 
 Once the index is created, packages can be uploaded to it with ``devpi upload`` or pushed from another index with ``devpi push``.
 

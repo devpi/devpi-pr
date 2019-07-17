@@ -21,7 +21,7 @@ def is_stage_empty(stage):
     return True
 
 
-class MergeStage(object):
+class PRStage(object):
     @classmethod
     def get_possible_indexconfig_keys(cls):
         """ Returns all possible custom index config keys. """
@@ -45,17 +45,17 @@ class MergeStage(object):
                     "push requests" % target.name)
             if is_stage_empty(self.stage):
                 errors.append(
-                    "The merge index has no packages")
+                    "The pr index has no packages")
         new_states_count = len(newconfig["states"])
         new_message_count = len(newconfig["messages"])
         if new_states_count != new_message_count:
             errors.append(
-                "The number of states and messages must match for a merge index")
+                "The number of states and messages must match for a pr index")
         if set(oldconfig.keys()) == set(['type']):
             # creating new stage
-            assert newconfig["type"] == "merge"
+            assert newconfig["type"] == "pr"
             if newconfig["states"][0] != "new":
-                errors.append("A new merge index must have state 'new'")
+                errors.append("A new pr index must have state 'new'")
         else:
             new_state_count = len(newconfig["states"])
             old_message_count = len(oldconfig["messages"])
@@ -63,17 +63,17 @@ class MergeStage(object):
             old_state_count = len(oldconfig["states"])
             if oldstate != newstate:
                 if new_message_count != old_message_count + 1:
-                    errors.append("A state change on a merge index requires a message")
+                    errors.append("A state change on a pr index requires a message")
             elif old_state_count != new_state_count:
                 errors.append(
                     "State transition from '%s' to '%s' not allowed" % (
                         oldstate, newstate))
             if old_message_count > new_message_count:
-                errors.append("Messages can't be removed from merge index")
+                errors.append("Messages can't be removed from pr index")
             if oldconfig["messages"] != newconfig["messages"][:old_message_count]:
                 errors.append("Existing messages can't be modified")
             if list(oldconfig["bases"]) != list(newconfig["bases"]):
-                errors.append("The bases of a merge index can't be changed")
+                errors.append("The bases of a pr index can't be changed")
             if oldstate != newstate:
                 new_states = states[oldstate]
                 if newstate not in new_states:
@@ -81,7 +81,7 @@ class MergeStage(object):
                         "State transition from '%s' to '%s' not allowed" % (
                             oldstate, newstate))
             if len(newconfig["bases"]) != 1:
-                errors.append("A merge index must have exactly one base")
+                errors.append("A pr index must have exactly one base")
             new_changers_count = len(newconfig["changers"])
             old_changers_count = len(oldconfig["changers"])
             if old_changers_count != new_changers_count:
@@ -97,7 +97,7 @@ class MergeStage(object):
         return self.stage.model.getstage(*targetindex.split("/"))
 
     def get_principals_for_index_delete(self, **kwargs):
-        principals = super(MergeStage, self).get_principals_for_index_delete(**kwargs)
+        principals = super(PRStage, self).get_principals_for_index_delete(**kwargs)
         state = self.stage.ixconfig['states'][-1]
         if state == 'approved':
             # when approved, the principals in the target acl_upload are
@@ -107,7 +107,7 @@ class MergeStage(object):
         return principals
 
     def get_principals_for_index_modify(self, **kwargs):
-        principals = super(MergeStage, self).get_principals_for_index_modify(**kwargs)
+        principals = super(PRStage, self).get_principals_for_index_modify(**kwargs)
         state = self.stage.ixconfig['states'][-1]
         if state == 'pending':
             # when pending, the principals in the target acl_upload are
@@ -131,11 +131,11 @@ class MergeStage(object):
             except TypeError:
                 request.apifatal(
                     400, message="missing X-Devpi-PR-Serial request header")
-            merge_serial = self.stage.get_last_change_serial()
-            if pr_serial != merge_serial:
+            last_serial = self.stage.get_last_change_serial()
+            if pr_serial != last_serial:
                 request.apifatal(
                     400, message="got X-Devpi-PR-Serial %s, expected %s" % (
-                        pr_serial, merge_serial))
+                        pr_serial, last_serial))
             if not request.has_permission("pypi_submit", context=target):
                 request.apifatal(401, message="user %r cannot upload to %r" % (
                     request.authenticated_userid, target.name))
@@ -207,7 +207,7 @@ class MergeStage(object):
 
 @server_hookimpl
 def devpiserver_get_stage_customizer_classes():
-    return [("merge", MergeStage)]
+    return [("pr", PRStage)]
 
 
 @server_hookimpl

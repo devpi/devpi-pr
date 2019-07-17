@@ -105,7 +105,7 @@ def full_indexname(hub, prname):
 
 
 @attr.s
-class MergeIndexInfos:
+class PRIndexInfos:
     user = attr.ib(type=str)
     index = attr.ib(type=str)
     indexname = attr.ib(type=str)
@@ -113,7 +113,7 @@ class MergeIndexInfos:
     ixconfig = attr.ib(type=dict)
 
 
-def require_merge_index(hub, name):
+def require_pr_index(hub, name):
     hub.requires_login()
     current = hub.require_valid_current_with_index()
     indexname = full_indexname(hub, name)
@@ -121,12 +121,12 @@ def require_merge_index(hub, name):
     url = current.get_index_url(indexname, slash=False)
     result = hub.http_api("get", url, fatal=False)
     if result.reason != 'OK':
-        hub.fatal("Couldn't access merge index '%s': %s" % (
+        hub.fatal("Couldn't access pr index '%s': %s" % (
             name, result.reason))
     ixconfig = result.result
-    if ixconfig['type'] != 'merge':
-        hub.fatal("The index '%s' is not a merge index" % name)
-    return MergeIndexInfos(user, index, indexname, url, ixconfig)
+    if ixconfig['type'] != 'pr':
+        hub.fatal("The index '%s' is not a pr index" % name)
+    return PRIndexInfos(user, index, indexname, url, ixconfig)
 
 
 def new_pr_arguments(parser):
@@ -159,7 +159,7 @@ def new_pr(hub, args):
     indexname = full_indexname(hub, name)
     url = hub.current.get_index_url(indexname, slash=False)
     hub.http_api("put", url, dict(
-        type="merge", bases=target,
+        type="pr", bases=target,
         states=["new"], messages=["New push request"]))
     for req in reqs:
         hub.http_api(
@@ -182,7 +182,7 @@ def abort_pr_review_arguments(parser):
 
 def abort_pr_review(hub, args):
     (name,) = args.name
-    indexinfos = require_merge_index(hub, name)
+    indexinfos = require_pr_index(hub, name)
     with devpi_pr_review_data(hub) as review_data:
         if indexinfos.indexname in review_data:
             hub.info("Aborted review of '%s'" % indexinfos.indexname)
@@ -205,12 +205,12 @@ def approve_pr_arguments(parser):
         help="Message to add on submit.")
     parser.add_argument(
         "-k", "--keep-index", action="store_true",
-        help="Keep the merge index instead of deleting it after approval.")
+        help="Keep the pr index instead of deleting it after approval.")
 
 
 def approve_pr(hub, args):
     (name,) = args.name
-    indexinfos = require_merge_index(hub, name)
+    indexinfos = require_pr_index(hub, name)
     serial = args.serial
     if serial is None:
         with devpi_pr_review_data(hub) as review_data:
@@ -313,14 +313,14 @@ def list_prs(hub, args):
     if not args.all_states:
         hidden_states.add("approved")
     push_requests_allowed = ixconfig.get("push_requests_allowed", False)
-    is_merge_index = ixconfig["type"] == "merge"
-    if push_requests_allowed or is_merge_index:
+    is_pr_index = ixconfig["type"] == "pr"
+    if push_requests_allowed or is_pr_index:
         list_url = index_url.asdir().joinpath("+pr-list")
         r = hub.http_api("get", list_url, type="pr-list")
         index_data = r.result
     else:
         index_data = {}
-    if not is_merge_index and not args.all_states:
+    if not is_pr_index and not args.all_states:
         hidden_states.add("new")
     user = current.get_auth_user()
     if user:
@@ -333,7 +333,7 @@ def list_prs(hub, args):
         list_url = user_url.asdir().joinpath("+pr-list")
         r = hub.http_api("get", list_url, type="pr-list")
         user_data = r.result
-        if is_merge_index and not args.all_states:
+        if is_pr_index and not args.all_states:
             user_data.pop("new", None)
     else:
         user_data = {}
@@ -364,7 +364,7 @@ def reject_pr_arguments(parser):
 
 def reject_pr(hub, args):
     (name,) = args.name
-    indexinfos = require_merge_index(hub, name)
+    indexinfos = require_pr_index(hub, name)
     message = get_message(hub, args.message)
     hub.http_api("patch", indexinfos.url, [
         "states+=rejected",
@@ -384,7 +384,7 @@ def review_pr_arguments(parser):
 
 def review_pr(hub, args):
     (name,) = args.name
-    indexinfos = require_merge_index(hub, name)
+    indexinfos = require_pr_index(hub, name)
     (targetindex,) = indexinfos.ixconfig['bases']
     targeturl = hub.current.get_index_url(targetindex)
     r = hub.http_api("get", targeturl.asdir().joinpath("+pr-list"), type="pr-list")
@@ -427,7 +427,7 @@ def submit_pr_arguments(parser):
 
 def submit_pr(hub, args):
     (name,) = args.name
-    indexinfos = require_merge_index(hub, name)
+    indexinfos = require_pr_index(hub, name)
     message = get_message(hub, args.message)
     hub.http_api("patch", indexinfos.url, [
         "states+=pending",
@@ -447,7 +447,7 @@ def cancel_pr_arguments(parser):
 
 def cancel_pr(hub, args):
     (name,) = args.name
-    indexinfos = require_merge_index(hub, name)
+    indexinfos = require_pr_index(hub, name)
     message = get_message(hub, args.message)
     hub.http_api("patch", indexinfos.url, [
         "states+=new",
@@ -464,7 +464,7 @@ def delete_pr_arguments(parser):
 
 def delete_pr(hub, args):
     (name,) = args.name
-    indexinfos = require_merge_index(hub, name)
+    indexinfos = require_pr_index(hub, name)
     hub.http_api("delete", indexinfos.url)
 
 
