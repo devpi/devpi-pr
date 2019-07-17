@@ -25,6 +25,18 @@ setup(
     url="http://doc.devpi.net",
     version=get_version(os.path.join("src", "devpi_pr")),
     license="MIT",
+    classifiers=[
+        "Development Status :: 5 - Production/Stable",
+        "Environment :: Web Environment",
+        "Intended Audience :: Developers",
+        "Intended Audience :: System Administrators",
+        "License :: OSI Approved :: MIT License",
+        "Programming Language :: Python",
+        "Topic :: Internet :: WWW/HTTP",
+        "Topic :: Internet :: WWW/HTTP :: WSGI :: Application",
+        "Programming Language :: Python :: Implementation :: PyPy"] + [
+            ("Programming Language :: Python :: %s" % x)
+            for x in "3.5 3.6 3.7".split()],
     entry_points={
         'devpi_client': [
             "devpi-pr = devpi_pr.client"],
@@ -45,6 +57,6 @@ setup(
             'devpi-server>=5.0.0']},
     include_package_data=True,
     zip_safe=False,
-    python_requires=">=3.4",
+    python_requires=">=3.5",
     package_dir={"": "src"},
     packages=['devpi_pr'])
