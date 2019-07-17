@@ -3,6 +3,7 @@
 /.tox/
 /bin/
 /dist/
+/htmlcov/
 /include/
 /lib/
 /pip-selfcheck.json
