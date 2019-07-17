@@ -12,8 +12,8 @@ Installation
 
 ``devpi-pr`` needs to be installed alongside ``devpi-server`` to enable *pull request* functionality.
 
-On client machines it is optional,
-but highly recommended to be installed alongside ``devpi-client`` to have more convenient options to manage *pull requests*.
+On client machines the creation and submission of *pull requests* is possible without the plugin, but more convenient with it installed.
+All other functionality requires the ``devpi-pr`` plugin to be installed alongside ``devpi-client``.
 
 You can install it with::
 
