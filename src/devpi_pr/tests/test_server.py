@@ -232,11 +232,13 @@ def test_approve_with_toxresult_and_docs(mapp, prindex, targetindex, testapp):
             'src': 'pruser/index',
             'what': 'push',
             'who': 'targetuser'}
-    releases = mapp.getreleaseslist('pkg', indexname=targetindex.stagename)
-    assert sorted(releases) == [
+    releases = sorted(
+        mapp.getreleaseslist('pkg', indexname=targetindex.stagename))
+    assert releases[:-1] == [
         'http://localhost/targetuser/targetindex/+f/2c2/6b46b68ffc68f/pkg-1.0.doc.zip',
-        'http://localhost/targetuser/targetindex/+f/d0b/425e00e15a0d3/pkg-1.0.tar.gz',
-        'http://localhost/targetuser/targetindex/+f/d0b/425e00e15a0d3/pkg-1.0.tar.gz.toxresult0']
+        'http://localhost/targetuser/targetindex/+f/d0b/425e00e15a0d3/pkg-1.0.tar.gz']
+    assert releases[-1].startswith(
+        'http://localhost/targetuser/targetindex/+f/d0b/425e00e15a0d3/pkg-1.0.tar.gz.toxresult')
 
 
 def test_reject_pending_not_possible_for_pruser(mapp, prindex, testapp):

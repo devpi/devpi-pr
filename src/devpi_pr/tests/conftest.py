@@ -52,19 +52,21 @@ def _liveserver(serverdir):
     host = 'localhost'
     port = get_open_port(host)
     path = py.path.local.sysfind("devpi-server")
+    init_path = py.path.local.sysfind("devpi-init")
     assert path
+    args = [
+        "--serverdir", str(serverdir)]
     try:
-        args = [
-            str(path), "--serverdir", str(serverdir), "--debug",
-            "--host", host, "--port", str(port)]
-        subprocess.check_call(args + ['--init', '--no-root-pypi'])
+        subprocess.check_call(
+            [str(init_path)] + args + ['--no-root-pypi'])
     except subprocess.CalledProcessError as e:
         # this won't output anything on Windows
         print(
             getattr(e, 'output', "Can't get process output on Windows"),
             file=sys.stderr)
         raise
-    p = subprocess.Popen(args)
+    p = subprocess.Popen(
+        [str(path)] + args + ["--debug", "--host", host, "--port", str(port)])
     wait_for_server_api(host, port)
     return (p, URL("http://%s:%s" % (host, port)))
 
