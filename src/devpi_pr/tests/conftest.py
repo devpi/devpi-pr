@@ -72,8 +72,8 @@ def _liveserver(serverdir):
 
 
 @pytest.yield_fixture(scope="session")
-def url_of_liveserver(request):
-    serverdir = request.config._tmpdirhandler.mktemp("liveserver")
+def url_of_liveserver(request, tmpdir_factory):
+    serverdir = tmpdir_factory.mktemp("liveserver")
     (p, url) = _liveserver(serverdir)
     try:
         yield url
