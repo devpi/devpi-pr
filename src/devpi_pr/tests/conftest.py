@@ -71,7 +71,7 @@ def _liveserver(serverdir):
     return (p, URL("http://%s:%s" % (host, port)))
 
 
-@pytest.yield_fixture(scope="session")
+@pytest.fixture(scope="session")
 def url_of_liveserver(request, tmpdir_factory):
     serverdir = tmpdir_factory.mktemp("liveserver")
     (p, url) = _liveserver(serverdir)
