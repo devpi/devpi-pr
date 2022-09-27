@@ -329,7 +329,7 @@ def list_prs(hub, args):
         login_status = "not logged in"
     hub.info("current devpi index: %s (%s)" % (current.index, login_status))
     if user:
-        user_url = current.get_user_url(indexname)
+        user_url = current.get_user_url(user)
         list_url = user_url.asdir().joinpath("+pr-list")
         r = hub.http_api("get", list_url, type="pr-list")
         user_data = r.result
