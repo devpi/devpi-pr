@@ -131,7 +131,7 @@ class PRStage(object):
             except TypeError:
                 request.apifatal(
                     400, message="missing X-Devpi-PR-Serial request header")
-            last_serial = self.stage.get_last_change_serial()
+            last_serial = self.stage.get_last_change_serial_perstage()
             if pr_serial != last_serial:
                 request.apifatal(
                     400, message="got X-Devpi-PR-Serial %s, expected %s" % (

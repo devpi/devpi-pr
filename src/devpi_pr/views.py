@@ -6,7 +6,7 @@ from pyramid.view import view_config
 def index_pr_list(context, request):
     if context.stage.ixconfig["type"] == "pr":
         ixconfig = context.stage.ixconfig
-        last_serial = context.stage.get_last_change_serial()
+        last_serial = context.stage.get_last_change_serial_perstage()
         apireturn(200, type="pr-list", result={
             ixconfig["states"][-1]: {
                 context.username: [dict(
@@ -27,7 +27,7 @@ def index_pr_list(context, request):
             if targetindex_name not in ixconfig['bases']:
                 continue
             stage = user.getstage(name)
-            last_serial = stage.get_last_change_serial()
+            last_serial = stage.get_last_change_serial_perstage()
             state_info = result.setdefault(ixconfig["states"][-1], {})
             state_info.setdefault(user.name, []).append(dict(
                 name=name,
@@ -47,7 +47,7 @@ def user_pr_list(context, request):
         if ixconfig["type"] != "pr":
             continue
         stage = user.getstage(name)
-        last_serial = stage.get_last_change_serial()
+        last_serial = stage.get_last_change_serial_perstage()
         (targetindex_name,) = ixconfig["bases"]
         state_info = result.setdefault(ixconfig["states"][-1], {})
         state_info.setdefault(user.name, []).append(dict(

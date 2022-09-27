@@ -1,8 +1,10 @@
 Changelog
 =========
 
-1.0.1 - Unreleased
+2.0.0 - Unreleased
 ------------------
+
+- Require devpi-server 6.x.
 
 - Drop support for Python < 3.7.
   [fschulze]
