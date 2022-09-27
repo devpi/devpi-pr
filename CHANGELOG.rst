@@ -4,6 +4,9 @@ Changelog
 1.0.1 - Unreleased
 ------------------
 
+- Drop support for Python < 3.7.
+  [fschulze]
+
 - Fix ``list_prs`` for devpi-client 6.x.
   [fschulze]
 
