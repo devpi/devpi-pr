@@ -54,7 +54,7 @@ setup(
         'client': [
             'devpi-client>=4.3.0'],
         'server': [
-            'devpi-server>=6.0.0']},
+            'devpi-server>=6.0.0,<=6.9.1']},
     include_package_data=True,
     zip_safe=False,
     python_requires=">=3.7",
