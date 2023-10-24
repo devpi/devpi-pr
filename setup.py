@@ -36,7 +36,7 @@ setup(
         "Topic :: Internet :: WWW/HTTP :: WSGI :: Application",
         "Programming Language :: Python :: Implementation :: PyPy"] + [
             ("Programming Language :: Python :: %s" % x)
-            for x in "3.7 3.8 3.9 3.10".split()],
+            for x in "3.7 3.8 3.9 3.10 3.11".split()],
     entry_points={
         'devpi_client': [
             "devpi-pr = devpi_pr.client"],
