@@ -19,6 +19,7 @@ else:
         (makexom, mapp, testapp)  # shut up pyflakes
     else:
         pytest_plugins = ["pytest_devpi_server", "test_devpi_server.plugin"]
+    pytestmark = pytest.mark.notransaction
 
 
 @pytest.fixture

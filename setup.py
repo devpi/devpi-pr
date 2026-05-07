@@ -34,29 +34,41 @@ setup(
         "Programming Language :: Python",
         "Topic :: Internet :: WWW/HTTP",
         "Topic :: Internet :: WWW/HTTP :: WSGI :: Application",
-        "Programming Language :: Python :: Implementation :: PyPy"] + [
-            ("Programming Language :: Python :: %s" % x)
-            for x in "3.7 3.8 3.9 3.10 3.11".split()],
+        "Programming Language :: Python :: Implementation :: PyPy",
+    ]
+    + [
+        ("Programming Language :: Python :: %s" % x)
+        for x in "3.7 3.8 3.9 3.10 3.11".split()
+    ],
     entry_points={
-        'devpi_client': [
-            "devpi-pr = devpi_pr.client"],
-        'devpi_server': [
-            "devpi-pr = devpi_pr.server"]},
+        "devpi_client": [
+            "devpi-pr = devpi_pr.client",
+        ],
+        "devpi_server": [
+            "devpi-pr = devpi_pr.server",
+        ],
+    },
     install_requires=[
         "appdirs",
-        "attrs"],
+        "attrs",
+    ],
     extras_require={
-        'dev': [
-            'pytest',
-            'pytest-cov',
-            'pytest-flake8',
-            'webtest'],
-        'client': [
-            'devpi-client>=4.3.0'],
-        'server': [
-            'devpi-server>=6.0.0,<=6.9.1']},
+        "dev": [
+            "pytest",
+            "pytest-cov",
+            "pytest-flake8",
+            "webtest",
+        ],
+        "client": [
+            "devpi-client>=4.3.0",
+        ],
+        "server": [
+            "devpi-server>=6.0.0,!=6.9.2,!=6.10.*,!=6.11.*,!=6.12.*,!=6.13.*,!=6.14.*,!=6.15.*,!=6.16.*,!=6.17.*,!=6.18.*,!=6.19.*,!=6.20.*,!=6.21.*,!=6.22.*,!=6.23.*,!=6.24.*,!=6.25.*"
+        ],
+    },
     include_package_data=True,
     zip_safe=False,
     python_requires=">=3.7",
     package_dir={"": "src"},
-    packages=['devpi_pr'])
+    packages=["devpi_pr"],
+)

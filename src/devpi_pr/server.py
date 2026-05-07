@@ -1,6 +1,5 @@
 from devpi_server.model import ensure_list
 from pluggy import HookimplMarker
-import json
 
 
 server_hookimpl = HookimplMarker("devpiserver")
@@ -22,6 +21,21 @@ def is_stage_empty(stage):
 
 
 class PRStage(object):
+    def get_indexconfig_fields(self):
+        from devpi_server.model.config import ConfigField
+
+        return [
+            ConfigField(
+                name="changers",
+                default=[self.stage.username],
+                normalize=ensure_list,
+                type=list,
+            ),
+            ConfigField(name="pull_requests_allowed", default=False, type=bool),
+            ConfigField(name="messages", normalize=ensure_list, type=list),
+            ConfigField(name="states", normalize=ensure_list, type=list),
+        ]
+
     @classmethod
     def get_possible_indexconfig_keys(cls):
         """ Returns all possible custom index config keys. """
@@ -84,7 +98,7 @@ class PRStage(object):
                 errors.append("A pr index must have exactly one base")
             new_changers_count = len(newconfig["changers"])
             old_changers_count = len(oldconfig["changers"])
-            if old_changers_count != new_changers_count:
+            if new_changers_count not in {old_changers_count, new_states_count}:
                 errors.append(
                     "The changers setting is automatically generated, "
                     "it is not allowed to be changed")
@@ -117,7 +131,7 @@ class PRStage(object):
         return principals
 
     def on_modified(self, request, oldconfig):
-        ixconfig = self.stage.ixconfig
+        ixconfig = getattr(self.stage, "ixconfig_mutable", self.stage.ixconfig)
         if not oldconfig:
             # just created
             ixconfig["changers"] = [request.authenticated_userid]
@@ -148,10 +162,19 @@ class PRStage(object):
                     toxresults.setdefault(link.for_entrypath, []).append(link)
                 for link in linkstore.get_links():
                     try:
+                        kw = {}
+                        if hasattr(link.entry, "hashes"):
+                            kw["hashes"] = link.entry.hashes
+                        if hasattr(link.entry, "size"):
+                            kw["size"] = link.entry.size
                         if link.rel == 'doczip':
-                            new_link = target.store_doczip(
-                                project, version,
-                                link.entry.file_get_content())
+                            with link.entry.file_open_read() as f:
+                                new_link = target.store_doczip(
+                                    project,
+                                    version,
+                                    f,
+                                    **kw,
+                                )
                             new_link.add_logs(
                                 x for x in link.get_logs()
                                 if x.get('what') != 'overwrite')
@@ -162,10 +185,15 @@ class PRStage(object):
                                 dst=target.name,
                                 message=ixconfig['messages'][-1])
                         elif link.rel == 'releasefile':
-                            new_link = target.store_releasefile(
-                                project, version,
-                                link.basename, link.entry.file_get_content(),
-                                last_modified=link.entry.last_modified)
+                            with link.entry.file_open_read() as f:
+                                new_link = target.store_releasefile(
+                                    project,
+                                    version,
+                                    link.basename,
+                                    f,
+                                    last_modified=link.entry.last_modified,
+                                    **kw,
+                                )
                             new_link.add_logs(
                                 x for x in link.get_logs()
                                 if x.get('what') != 'overwrite')
@@ -176,10 +204,10 @@ class PRStage(object):
                                 dst=target.name,
                                 message=ixconfig['messages'][-1])
                             for tox_link in toxresults.get(link.relpath, []):
-                                new_tox_link = target.store_toxresult(
-                                    new_link,
-                                    json.loads(
-                                        tox_link.entry.file_get_content().decode('utf-8')))
+                                with tox_link.entry.file_open_read() as f:
+                                    new_tox_link = target.store_toxresult(
+                                        new_link, f, **kw
+                                    )
                                 new_tox_link.add_logs(
                                     x for x in tox_link.get_logs()
                                     if x.get('what') != 'overwrite')
@@ -200,9 +228,10 @@ class PRStage(object):
                 raise self.InvalidIndexconfig([
                     "State transition to '%s' "
                     "not authorized" % state])
-        old_state = oldconfig["states"][-1]
-        if old_state != state:
-            ixconfig["changers"].append(request.authenticated_userid)
+        if oldconfig["states"] != ixconfig["states"]:
+            self.stage._modify(
+                changers=ixconfig["changers"] + [request.authenticated_userid]
+            )
 
 
 @server_hookimpl
@@ -212,7 +241,7 @@ def devpiserver_get_stage_customizer_classes():
 
 @server_hookimpl
 def devpiserver_indexconfig_defaults(index_type):
-    if index_type == "stage":
+    if index_type in {"local", "stage"}:
         return {
             'pull_requests_allowed': False}
     return {}

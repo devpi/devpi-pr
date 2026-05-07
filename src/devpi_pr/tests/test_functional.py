@@ -1,13 +1,21 @@
 import pytest
 import re
+
+
+pytestmark = [
+    pytest.mark.nomocking,
+    pytest.mark.notransaction,
+]
+
+
 try:
     from devpi_server import __version__  # noqa
 except ImportError:
-    pytestmark = pytest.mark.skip("No devpi-server installed")
+    pytestmark.append(pytest.mark.skip("No devpi-server installed"))
 try:
     from devpi import __version__  # noqa
 except ImportError:
-    pytestmark = pytest.mark.skip("No devpi-client installed")
+    pytestmark.append(pytest.mark.skip("No devpi-client installed"))
 
 
 @pytest.fixture(autouse=True)
