@@ -1,7 +1,7 @@
 Changelog
 =========
 
-2.0.0 - Unreleased
+2.0.0 - 2026-05-08
 ------------------
 
 - Support devpi-server 7.0.0.
