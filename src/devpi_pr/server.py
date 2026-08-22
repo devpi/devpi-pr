@@ -150,7 +150,7 @@ class PRStage:
                 request.apifatal(
                     400, message="got X-Devpi-PR-Serial %s, expected %s" % (
                         pr_serial, last_serial))
-            if not request.has_permission("pypi_submit", context=target):
+            if not request.has_permission("upload", context=target):
                 request.apifatal(401, message="user %r cannot upload to %r" % (
                     request.authenticated_userid, target.name))
             for project in self.stage.list_projects_perstage():
@@ -224,7 +224,7 @@ class PRStage:
                             409, "%s already exists in non-volatile index" % (
                                 e.link.basename,))
         elif state == "rejected":
-            if not request.has_permission("pypi_submit", context=target):
+            if not request.has_permission("upload", context=target):
                 raise self.InvalidIndexconfig([
                     "State transition to '%s' "
                     "not authorized" % state])
