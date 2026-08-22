@@ -1,0 +1,21 @@
+[tool.ruff]
+extend = "ruff-strict.toml"
+target-version = "py37"
+
+
+[tool.ruff.lint]
+extend-ignore = [
+    "ARG001", # maybe cleanup later - unused function argument
+    "C400", # maybe cleanup later - unnecessary generator
+    "C401", # maybe cleanup later - rewrite as set comprehension
+    "C405", # cleanup soon - set literal instead of set call
+    "C901", # ignore - complex structure
+    "PT007", # maybe cleanup later - wrong values type in `pytest.mark.parametrize` expected `list`
+    "RET503", # maybe cleanup later - missing return
+    "RET504", # maybe cleanup later - unnecessary assignment before return
+    "RUF059", # cleanup later - unpacked variable unused
+    "SIM108", # cleanup later
+    "SIM117", # cleanup later
+    "SLF001", # ignore - private member accessed
+    "UP031", # maybe cleanup later - printf string formatting
+]

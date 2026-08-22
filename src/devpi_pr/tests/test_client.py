@@ -1,4 +1,6 @@
 import pytest
+
+
 try:
     import devpi.main
 except ImportError:
@@ -8,7 +10,10 @@ except ImportError:
 @pytest.fixture
 def hub():
     class DummyHub:
-        def fatal(self, msg):
+        def fatal(
+            self,
+            msg,  # noqa: ARG002 - API
+        ):
             import sys
             sys.exit(1)
     return DummyHub()
@@ -34,7 +39,7 @@ def test_commands(capsys):
 def devpi_pr_data_dir(monkeypatch, tmpdir):
     path = tmpdir.join('devpi-pr-user-data').ensure_dir()
     monkeypatch.setattr("devpi_pr.client.devpi_pr_data_dir", path.strpath)
-    yield path
+    return path
 
 
 def test_devpi_pr_review_data_initial(devpi_pr_data_dir, hub):

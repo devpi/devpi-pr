@@ -20,7 +20,7 @@ def is_stage_empty(stage):
     return True
 
 
-class PRStage(object):
+class PRStage:
     def get_indexconfig_fields(self):
         from devpi_server.model.config import ConfigField
 
@@ -48,7 +48,7 @@ class PRStage(object):
         if key in ("messages", "states", "changers"):
             return ensure_list(value)
 
-    def validate_config(self, oldconfig, newconfig):
+    def validate_config(self, oldconfig, newconfig):  # noqa: C901, PLR0912
         errors = []
         newstate = newconfig["states"][-1]
         if newstate == "pending":
@@ -67,7 +67,7 @@ class PRStage(object):
                 "The number of states and messages must match for a pr index")
         if set(oldconfig.keys()) == set(['type']):
             # creating new stage
-            assert newconfig["type"] == "pr"
+            assert newconfig["type"] == "pr"  # noqa: S101
             if newconfig["states"][0] != "new":
                 errors.append("A new pr index must have state 'new'")
         else:
@@ -111,7 +111,7 @@ class PRStage(object):
         return self.stage.model.getstage(*targetindex.split("/"))
 
     def get_principals_for_index_delete(self, **kwargs):
-        principals = super(PRStage, self).get_principals_for_index_delete(**kwargs)
+        principals = super().get_principals_for_index_delete(**kwargs)
         state = self.stage.ixconfig['states'][-1]
         if state == 'approved':
             # when approved, the principals in the target acl_upload are
@@ -121,7 +121,7 @@ class PRStage(object):
         return principals
 
     def get_principals_for_index_modify(self, **kwargs):
-        principals = super(PRStage, self).get_principals_for_index_modify(**kwargs)
+        principals = super().get_principals_for_index_modify(**kwargs)
         state = self.stage.ixconfig['states'][-1]
         if state == 'pending':
             # when pending, the principals in the target acl_upload are
@@ -130,7 +130,7 @@ class PRStage(object):
             principals.update(target.ixconfig.get('acl_upload', []))
         return principals
 
-    def on_modified(self, request, oldconfig):
+    def on_modified(self, request, oldconfig):  # noqa: C901, PLR0912
         ixconfig = getattr(self.stage, "ixconfig_mutable", self.stage.ixconfig)
         if not oldconfig:
             # just created

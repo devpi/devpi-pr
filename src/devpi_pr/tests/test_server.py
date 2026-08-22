@@ -1,5 +1,7 @@
 from devpi_common.metadata import parse_version
 import pytest
+
+
 try:
     from devpi_server import __version__ as _devpi_server_version
     devpi_server_version = parse_version(_devpi_server_version)
@@ -7,16 +9,17 @@ except ImportError:
     pytestmark = pytest.mark.skip("No devpi-server installed")
 else:
     if devpi_server_version < parse_version("6.9.3dev"):
-        from test_devpi_server.conftest import gentmp  # noqa
-        from test_devpi_server.conftest import httpget  # noqa
-        from test_devpi_server.conftest import makemapp  # noqa
-        from test_devpi_server.conftest import maketestapp  # noqa
+        from test_devpi_server.conftest import gentmp  # noqa: F401
+        from test_devpi_server.conftest import httpget  # noqa: F401
+        from test_devpi_server.conftest import makemapp  # noqa: F401
+        from test_devpi_server.conftest import maketestapp  # noqa: F401
         from test_devpi_server.conftest import makexom
         from test_devpi_server.conftest import mapp
-        from test_devpi_server.conftest import pypiurls  # noqa
-        from test_devpi_server.conftest import storage_info  # noqa
+        from test_devpi_server.conftest import pypiurls  # noqa: F401
+        from test_devpi_server.conftest import storage_info  # noqa: F401
         from test_devpi_server.conftest import testapp
-        (makexom, mapp, testapp)  # shut up pyflakes
+
+        (makexom, mapp, testapp)  # noqa: B018 - shut up pyflakes
     else:
         pytest_plugins = ["pytest_devpi_server", "test_devpi_server.plugin"]
     pytestmark = pytest.mark.notransaction

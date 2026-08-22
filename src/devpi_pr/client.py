@@ -2,8 +2,8 @@ from contextlib import contextmanager
 from devpi_common.metadata import parse_requirement
 from operator import itemgetter
 from pluggy import HookimplMarker
-from tempfile import NamedTemporaryFile
 from subprocess import call
+from tempfile import NamedTemporaryFile
 import appdirs
 import attr
 import json
@@ -35,9 +35,9 @@ def get_message(hub, msg):
             # An empty message aborts the current command.""").encode('utf-8'))
         tf.flush()
         try:
-            result = call([editor, tf.name])
-        except Exception as e:
-            hub.fatal(''.join(traceback.format_exception(e.__class__, e, None)))
+            result = call([editor, tf.name])  # noqa: S603
+        except Exception as e:  # noqa: BLE001
+            hub.fatal("".join(traceback.format_exception(e.__class__, e, None)))
         if result != 0:
             hub.fatal("Error (%s) calling editor %s" % (result, editor))
         tf.seek(0)
@@ -273,10 +273,11 @@ def merge_pr_data(data1, data2):
 
 
 def get_prs(users_prs):
-    result = []
-    for user, prs in users_prs.items():
-        for pr in prs:
-            result.append(dict(pr, name="%s/%s" % (user, pr['name'])))
+    result = [
+        dict(pr, name="{}/{}".format(user, pr["name"]))
+        for user, prs in users_prs.items()
+        for pr in prs
+    ]
     return sorted(result, key=itemgetter("name", "base", "last_serial"))
 
 

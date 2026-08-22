@@ -9,11 +9,11 @@ pytestmark = [
 
 
 try:
-    from devpi_server import __version__  # noqa
+    from devpi_server import __version__  # noqa: F401
 except ImportError:
     pytestmark.append(pytest.mark.skip("No devpi-server installed"))
 try:
-    from devpi import __version__  # noqa
+    from devpi import __version__ as devpi_version  # noqa: F401
 except ImportError:
     pytestmark.append(pytest.mark.skip("No devpi-client installed"))
 
@@ -22,7 +22,7 @@ except ImportError:
 def devpi_pr_data_dir(monkeypatch, tmpdir):
     path = tmpdir.join('devpi-pr-user-data').ensure_dir()
     monkeypatch.setattr("devpi_pr.client.devpi_pr_data_dir", path.strpath)
-    yield path
+    return path
 
 
 @pytest.fixture

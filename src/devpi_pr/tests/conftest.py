@@ -1,4 +1,4 @@
-from __future__ import print_function
+# ruff: noqa: T201
 from contextlib import closing
 from devpi_common.url import URL
 from io import BytesIO
@@ -57,8 +57,7 @@ def _liveserver(serverdir):
     args = [
         "--serverdir", str(serverdir)]
     try:
-        subprocess.check_call(
-            [str(init_path)] + args + ['--no-root-pypi'])
+        subprocess.check_call([str(init_path), *args, "--no-root-pypi"])
     except subprocess.CalledProcessError as e:
         # this won't output anything on Windows
         print(
@@ -66,7 +65,8 @@ def _liveserver(serverdir):
             file=sys.stderr)
         raise
     p = subprocess.Popen(
-        [str(path)] + args + ["--debug", "--host", host, "--port", str(port)])
+        [str(path), *args, "--debug", "--host", host, "--port", str(port)]
+    )
     wait_for_server_api(host, port)
     return (p, URL("http://%s:%s" % (host, port)))
 
@@ -95,14 +95,13 @@ def cmd_devpi(tmpdir, monkeypatch):
 
     def run_devpi(*args, **kwargs):
         callargs = []
-        for arg in ["devpi", "--clientdir", clientdir] + list(args):
-            if isinstance(arg, URL):
-                arg = arg.url
+        for _arg in ["devpi", "--clientdir", clientdir, *args]:
+            arg = _arg.url if isinstance(_arg, URL) else _arg
             callargs.append(str(arg))
         print("*** inline$ %s" % " ".join(callargs))
         hub, method = initmain(callargs)
         monkeypatch.setattr(hub, "ask_confirm", ask_confirm)
-        expected = kwargs.get("code", None)
+        expected = kwargs.get("code")
         try:
             method(hub, hub.args)
         except SystemExit as sysex:
@@ -171,8 +170,8 @@ def getjson(devpi_username, url_of_liveserver):
         jsontype = "application/json"
         headers = {"Accept": jsontype, "content-type": jsontype}
         r = requests.get(
-            url_of_liveserver.joinpath(userindex).url,
-            headers=headers)
+            url_of_liveserver.joinpath(userindex).url, headers=headers, timeout=60
+        )
         if r.status_code != 200:
             raise ValueError(r.reason)
         return r.json()
@@ -188,13 +187,12 @@ def makepkg(tmpdir):
                 "Metadata-Version: 1.1",
                 "Name: %s" % name,
                 "Version: %s" % version]).encode('utf-8')
-            tf = tarfile.open(basename, mode='w:gz', fileobj=f)
-            tinfo = tarfile.TarInfo('PKG-INFO')
-            tinfo.size = len(pkg_info)
-            tf.addfile(tinfo, BytesIO(pkg_info))
-            tinfo = tarfile.TarInfo('content')
-            tinfo.size = len(content)
-            tf.addfile(tinfo, BytesIO(content))
-            tf.close()
+            with tarfile.open(basename, mode="w:gz", fileobj=f) as tf:
+                tinfo = tarfile.TarInfo("PKG-INFO")
+                tinfo.size = len(pkg_info)
+                tf.addfile(tinfo, BytesIO(pkg_info))
+                tinfo = tarfile.TarInfo("content")
+                tinfo.size = len(content)
+                tf.addfile(tinfo, BytesIO(content))
         return fn
     return makepkg
